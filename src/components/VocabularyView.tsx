@@ -42,6 +42,12 @@ interface VocabularyViewProps {
   }) => void;
 }
 
+// Single source of truth for the guest/local personal-vocab localStorage key,
+// so the read path and write path can never drift apart.
+function getPersonalVocabStorageKey(userId: string | undefined) {
+  return `personal_vocab_${userId || 'guest'}`;
+}
+
 export default function VocabularyView({ currentUser, onShowModal }: VocabularyViewProps) {
   // Navigation states
   const [activeSubTab, setActiveSubTab] = useState<'lookup' | 'practice' | 'import'>('lookup');
@@ -115,7 +121,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
     setLoadingPersonal(true);
     try {
       if (isGuest) {
-        const local = localStorage.getItem(`personal_vocab_${currentUser.id || 'guest'}`);
+        const local = localStorage.getItem(getPersonalVocabStorageKey(currentUser.id));
         if (local) {
           setPersonalList(JSON.parse(local));
         } else {
@@ -231,7 +237,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
         setPersonalList(updatedList);
         
         if (isGuest) {
-          localStorage.setItem(`personal_vocab_guest`, JSON.stringify(updatedList));
+          localStorage.setItem(getPersonalVocabStorageKey(currentUser.id), JSON.stringify(updatedList));
         } else {
           const docId = `${currentUser.id}_${item.id}`;
           try {
@@ -246,7 +252,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
         setPersonalList(updatedList);
 
         if (isGuest) {
-          localStorage.setItem(`personal_vocab_guest`, JSON.stringify(updatedList));
+          localStorage.setItem(getPersonalVocabStorageKey(currentUser.id), JSON.stringify(updatedList));
         } else {
           const docId = `${currentUser.id}_${item.id}`;
           try {
@@ -284,7 +290,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
       utterance.onend = () => setIsSpeaking(false);
       window.speechSynthesis.speak(utterance);
     } else {
-      alert("Trình duyệt không hỗ trợ Text-to-Speech.");
+      onShowModal({
+        type: 'danger',
+        title: 'Không hỗ trợ phát âm',
+        message: 'Trình duyệt hiện tại không hỗ trợ tính năng Text-to-Speech.'
+      });
     }
   };
 
@@ -742,16 +752,16 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
   };
 
   // Filtered vocabulary selection for lookup query
-  const filteredLookupList = mergedVocabulary.filter(item => {
+  const filteredLookupList = useMemo(() => mergedVocabulary.filter(item => {
     const matchesLevel = selectedLevel === 'all' || item.level.toLowerCase() === selectedLevel.toLowerCase();
     const matchesTopic = selectedTopic === 'all' || item.topic.toLowerCase() === selectedTopic.toLowerCase();
-    
+
     const searchClean = searchQuery.toLowerCase().trim();
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       item.word.toLowerCase().includes(searchClean);
 
     return matchesLevel && matchesTopic && matchesSearch;
-  });
+  }), [mergedVocabulary, selectedLevel, selectedTopic, searchQuery]);
 
   const ITEMS_PER_PAGE = 20;
   const totalPages = Math.ceil(filteredLookupList.length / ITEMS_PER_PAGE);

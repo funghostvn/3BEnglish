@@ -1,13 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { Exam, Attempt, VOCABULARY_THEMES, GRAMMAR_THEMES } from '../types';
-import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Exam, Attempt, User, VOCABULARY_THEMES, GRAMMAR_THEMES } from '../types';
+import { fetchCollection } from '../services/firestore';
 import { BarChart, BookOpen, Clock, Award, History, RotateCcw, TrendingUp, Trophy } from 'lucide-react';
+
+interface LeaderboardEntry {
+  id: string;
+  name: string;
+  username: string;
+  grade: string;
+  attemptsCount: number;
+  totalTime: number;
+  latestScore: number | null;
+  monthAvg: number | null;
+}
 
 interface DashboardViewProps {
   currentGradeFilter: string;
-  currentUser: any;
-  onRetakeExam: (examId: string, savedAnswers?: any) => void;
+  currentUser: User | null;
+  onRetakeExam: (examId: string, savedAnswers?: { [qNum: string]: string }) => void;
   onShowModal: (config: { type: 'success' | 'warning' | 'danger' | 'info'; title: string; message: string }) => void;
   onSelectWeakArea?: (type: 'vocab' | 'grammar', value: string) => void;
 }
@@ -21,7 +31,7 @@ export default function DashboardView({
 }: DashboardViewProps) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [sortBy, setSortBy] = useState<'attemptsCount' | 'totalTime' | 'monthAvg' | 'latestScore'>('totalTime');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,29 +39,29 @@ export default function DashboardView({
   useEffect(() => {
     setCurrentPage(1);
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentGradeFilter, currentUser]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
+      // Grade filter only narrows a student's own attempt history below; the
+      // system-wide exam/question stats intentionally always cover all grades.
       let effectiveGradeFilter = currentGradeFilter;
       if (currentUser && currentUser.role === 'student' && currentUser.grade) {
         effectiveGradeFilter = currentUser.grade;
       }
+      const parsedGradeFilter = effectiveGradeFilter === 'all' ? null : parseInt(effectiveGradeFilter, 10);
+      const hasValidGradeFilter = parsedGradeFilter !== null && !isNaN(parsedGradeFilter);
 
-      // 1. Fetch Exams (Always fetch all exams to compute global statistics of all 3 grades)
-      const examCol = collection(db, 'exams');
-      const qExam = query(examCol);
-      const examSnap = await getDocs(qExam);
-      const examList = examSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+      // 1. Fetch Exams (always all exams: global stats span all 3 grades)
+      const examList = await fetchCollection<Exam>('exams');
       setExams(examList);
 
-      // 2. Fetch All Attempts (Shared across stats, personal history & leaderboard calculations)
-      const attemptCol = collection(db, 'attempts');
-      const attemptSnap = await getDocs(attemptCol);
-      let allAttemptsList = attemptSnap.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) })) as Attempt[];
+      // 2. Fetch All Attempts (needed in full: leaderboard aggregates every student)
+      let allAttemptsList = await fetchCollection<Attempt>('attempts');
 
-      // Filter out invalid attempts (too short: less than 120 seconds)
+      // Filter out invalid attempts (too short: likely accidental/rage-quit submits)
       allAttemptsList = allAttemptsList.filter(att => (att.timeSpent || 0) >= 120);
 
       // Group attempts by userId
@@ -74,32 +84,27 @@ export default function DashboardView({
         }
       });
 
-      // Client-side filtering of personal attempts by grade if selected
+      // Client-side filtering of personal attempts by grade if selected.
+      // If the grade filter can't be parsed to a number (e.g. an admin-only
+      // 'admin' grade string slipping in here), treat it as "no filter"
+      // instead of silently dropping every attempt via a NaN comparison.
       const filteredAttempts = personalAttempts.filter(att => {
-        if (effectiveGradeFilter === 'all') return true;
-        return att.grade === parseInt(effectiveGradeFilter, 10);
+        if (!hasValidGradeFilter) return true;
+        return att.grade === parsedGradeFilter;
       });
 
-      // Sort personal attempts by latest completed
       filteredAttempts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setAttempts(filteredAttempts);
 
       // 3. Fetch Users
-      const userCol = collection(db, 'users');
-      const userSnap = await getDocs(userCol);
-      const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-
-      const userMap: { [userId: string]: any } = {};
-      userList.forEach(u => {
-        userMap[u.id] = u;
-      });
+      const userList = await fetchCollection<User>('users');
 
       // Compute statistics for non-admin users with >=1 attempts
       const now = new Date();
       const curYear = now.getFullYear();
       const curMonth = now.getMonth();
 
-      const leaderboardData = userList
+      const leaderboardData: LeaderboardEntry[] = userList
         .filter(u => u.role !== 'admin') // Exclude admin users
         .map(u => {
           const userAttempts = attemptsByUser[u.id] || [];
@@ -139,52 +144,63 @@ export default function DashboardView({
       setLeaderboard(leaderboardData);
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Lỗi tải bảng điều khiển', message: 'Không thể tải dữ liệu thống kê. Vui lòng kiểm tra kết nối mạng và tải lại trang.' });
     } finally {
       setLoading(false);
     }
   };
 
-  // Processing Stats
-  const totalExamsCount = exams.length;
-  let totalQuestionsCount = 0;
-  const vocabThemeStats: { [theme: string]: number } = {};
-  const grammarThemeStats: { [theme: string]: number } = {};
-  const difficultyStats: { [level: string]: number } = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
+  // Processing Stats — memoized so they only recompute when the underlying
+  // data changes, not on every render (e.g. sortBy/currentPage clicks).
+  const dashboardStats = useMemo(() => {
+    let questionCount = 0;
+    const vocabStats: { [theme: string]: number } = {};
+    const grammarStats: { [theme: string]: number } = {};
+    const diffStats: { [level: string]: number } = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
+    const gradeStats: { [key: number]: number } = { 6: 0, 10: 0, 12: 0 };
 
-  // Init all categories to 0
-  VOCABULARY_THEMES.forEach(theme => { vocabThemeStats[theme] = 0; });
-  GRAMMAR_THEMES.forEach(theme => { grammarThemeStats[theme] = 0; });
+    VOCABULARY_THEMES.forEach(theme => { vocabStats[theme] = 0; });
+    GRAMMAR_THEMES.forEach(theme => { grammarStats[theme] = 0; });
 
-  exams.forEach(ex => {
-    (ex.passages || []).forEach(pass => {
-      const vocabCat = pass.vocabularyCategory || "Khác";
-      (pass.questions || []).forEach(q => {
-        totalQuestionsCount++;
-        // Difficulty
-        if (q.difficulty && difficultyStats[q.difficulty] !== undefined) {
-          difficultyStats[q.difficulty]++;
-        }
-        // Grammar
-        if (q.grammarCategory && grammarThemeStats[q.grammarCategory] !== undefined) {
-          grammarThemeStats[q.grammarCategory]++;
-        } else {
-          grammarThemeStats["Other grammar"]++;
-        }
-        // Vocab
-        if (vocabCat && vocabThemeStats[vocabCat] !== undefined) {
-          vocabThemeStats[vocabCat]++;
-        }
+    exams.forEach(ex => {
+      if (ex.grade === 6 || ex.grade === 10 || ex.grade === 12) {
+        gradeStats[ex.grade] = (gradeStats[ex.grade] || 0) + 1;
+      }
+      (ex.passages || []).forEach(pass => {
+        const vocabCat = pass.vocabularyCategory || "Khác";
+        (pass.questions || []).forEach(q => {
+          questionCount++;
+          if (q.difficulty && diffStats[q.difficulty] !== undefined) {
+            diffStats[q.difficulty]++;
+          }
+          if (q.grammarCategory && grammarStats[q.grammarCategory] !== undefined) {
+            grammarStats[q.grammarCategory]++;
+          } else {
+            grammarStats["Other grammar"]++;
+          }
+          if (vocabCat && vocabStats[vocabCat] !== undefined) {
+            vocabStats[vocabCat]++;
+          }
+        });
       });
     });
-  });
 
-  // Grade break counts
-  const examsByGrade: { [key: number]: number } = { 6: 0, 10: 0, 12: 0 };
-  exams.forEach(e => {
-    if (e.grade === 6) examsByGrade[6] = (examsByGrade[6] || 0) + 1;
-    if (e.grade === 10) examsByGrade[10] = (examsByGrade[10] || 0) + 1;
-    if (e.grade === 12) examsByGrade[12] = (examsByGrade[12] || 0) + 1;
-  });
+    return {
+      totalQuestionsCount: questionCount,
+      vocabThemeStats: vocabStats,
+      grammarThemeStats: grammarStats,
+      difficultyStats: diffStats,
+      examsByGrade: gradeStats,
+    };
+  }, [exams]);
+
+  const totalQuestionsCount: number = dashboardStats.totalQuestionsCount;
+  const vocabThemeStats: Record<string, number> = dashboardStats.vocabThemeStats;
+  const grammarThemeStats: Record<string, number> = dashboardStats.grammarThemeStats;
+  const difficultyStats: Record<string, number> = dashboardStats.difficultyStats;
+  const examsByGrade: Record<number, number> = dashboardStats.examsByGrade;
+
+  const totalExamsCount = exams.length;
 
   // Highlight Stats for current user/guest
   const totalCompletedCount = attempts.length;
@@ -192,45 +208,43 @@ export default function DashboardView({
     ? Math.round((attempts.reduce((sum, att) => sum + att.score, 0) / totalCompletedCount) * 10)
     : 0;
 
-  // Find weak categories
-  const grammarWrongCounts: { [theme: string]: number } = {};
-  const vocabWrongCounts: { [theme: string]: number } = {};
+  const { sortedWeakGrammar, sortedWeakVocab } = useMemo(() => {
+    const grammarWrongCounts: { [theme: string]: number } = {};
+    const vocabWrongCounts: { [theme: string]: number } = {};
 
-  attempts.forEach(att => {
-    (att.weakGrammar || []).forEach(g => {
-      grammarWrongCounts[g] = (grammarWrongCounts[g] || 0) + 1;
+    attempts.forEach(att => {
+      (att.weakGrammar || []).forEach(g => {
+        grammarWrongCounts[g] = (grammarWrongCounts[g] || 0) + 1;
+      });
+      (att.weakVocab || []).forEach(v => {
+        vocabWrongCounts[v] = (vocabWrongCounts[v] || 0) + 1;
+      });
     });
-    (att.weakVocab || []).forEach(v => {
-      vocabWrongCounts[v] = (vocabWrongCounts[v] || 0) + 1;
-    });
-  });
 
-  const sortedWeakGrammar = Object.entries(grammarWrongCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(x => x[0]);
-
-  const sortedWeakVocab = Object.entries(vocabWrongCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(x => x[0]);
+    return {
+      sortedWeakGrammar: Object.entries(grammarWrongCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]),
+      sortedWeakVocab: Object.entries(vocabWrongCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]),
+    };
+  }, [attempts]);
 
   // Sort the active leaderboard based on selected field
-  const sortedLeaderboard = [...leaderboard].sort((a, b) => {
-    if (sortBy === 'attemptsCount') {
-      if (b.attemptsCount !== a.attemptsCount) {
-        return b.attemptsCount - a.attemptsCount;
+  const sortedLeaderboard = useMemo(() => {
+    return [...leaderboard].sort((a, b) => {
+      if (sortBy === 'attemptsCount') {
+        if (b.attemptsCount !== a.attemptsCount) {
+          return b.attemptsCount - a.attemptsCount;
+        }
+        return (b.monthAvg || 0) - (a.monthAvg || 0);
+      } else if (sortBy === 'totalTime') {
+        return b.totalTime - a.totalTime;
+      } else if (sortBy === 'latestScore') {
+        return (b.latestScore || 0) - (a.latestScore || 0);
+      } else if (sortBy === 'monthAvg') {
+        return (b.monthAvg || 0) - (a.monthAvg || 0);
       }
-      return (b.monthAvg || 0) - (a.monthAvg || 0);
-    } else if (sortBy === 'totalTime') {
-      return b.totalTime - a.totalTime;
-    } else if (sortBy === 'latestScore') {
-      return (b.latestScore || 0) - (a.latestScore || 0);
-    } else if (sortBy === 'monthAvg') {
-      return (b.monthAvg || 0) - (a.monthAvg || 0);
-    }
-    return 0;
-  }).slice(0, 10);
+      return 0;
+    }).slice(0, 10);
+  }, [leaderboard, sortBy]);
 
   if (loading) {
     return (

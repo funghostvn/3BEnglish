@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { User, ExtensionLog } from '../types';
-import { collection, getDocs, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { fetchCollection, updateDocById } from '../services/firestore';
 import { Users, Phone, Mail, Calendar, Key, UserCheck, ShieldAlert, History, Edit, CalendarMinus } from 'lucide-react';
 
 interface UserAdminViewProps {
@@ -31,20 +32,16 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
   const fetchUsersAndHistory = async () => {
     setLoading(true);
     try {
-      const userCol = collection(db, 'users');
-      const userSnap = await getDocs(userCol);
-      const userList = userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      const userList = await fetchCollection<User>('users');
       setUsers(userList);
 
-      const extCol = collection(db, 'extensions');
-      const extSnap = await getDocs(extCol);
-      const extList = extSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExtensionLog));
-      
+      const extList = await fetchCollection<ExtensionLog>('extensions');
       // Sort newest extensions logs
-      extList.sort((a,b) => new Date(b.extendedAt).getTime() - new Date(a.extendedAt).getTime());
+      extList.sort((a, b) => new Date(b.extendedAt).getTime() - new Date(a.extendedAt).getTime());
       setExtensionHistory(extList);
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Lỗi tải dữ liệu', message: 'Không thể tải danh sách học sinh/lịch sử gia hạn. Vui lòng kiểm tra kết nối mạng và tải lại trang.' });
     } finally {
       setLoading(false);
     }
@@ -59,53 +56,43 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
     if (!activeUserToEdit) return;
 
     try {
-      const userColSnap = await getDocs(collection(db, 'users'));
-      const targetUserDoc = userColSnap.docs.find(d => d.data().id === activeUserToEdit.id);
+      await updateDocById('users', activeUserToEdit.id, {
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        grade: editForm.grade
+      });
 
-      if (targetUserDoc) {
-        await updateDoc(doc(db, 'users', targetUserDoc.id), {
-          name: editForm.name,
-          email: editForm.email,
-          phone: editForm.phone,
-          grade: editForm.grade
-        });
+      onShowModal({
+        type: 'success',
+        title: 'Cập nhật thành công',
+        message: `Thông tin tài diện của '${editForm.name}' đã được đồng bộ hóa thành công!`
+      });
 
-        onShowModal({
-          type: 'success',
-          title: 'Cập nhật thành công',
-          message: `Thông tin tài diện của '${editForm.name}' đã được đồng bộ hóa thành công!`
-        });
-
-        setActiveUserToEdit(null);
-        fetchUsersAndHistory();
-      }
+      setActiveUserToEdit(null);
+      fetchUsersAndHistory();
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Cập nhật thất bại', message: 'Không thể lưu thông tin học sinh. Vui lòng thử lại.' });
     }
   };
 
   const handlePasswordReset = async (u: User) => {
     const generatedPass = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits random password
-    
+
     const triggerReset = async () => {
       try {
-        const userColSnap = await getDocs(collection(db, 'users'));
-        const targetUserDoc = userColSnap.docs.find(d => d.data().id === u.id);
+        await updateDocById('users', u.id, { password: generatedPass });
 
-        if (targetUserDoc) {
-          await updateDoc(doc(db, 'users', targetUserDoc.id), {
-            password: generatedPass
-          });
-
-          onShowModal({
-            type: 'success',
-            title: 'Khôi phục mật khẩu',
-            message: `Mật khẩu mới của học sinh '${u.name}' là: ${generatedPass}. Vui lòng ghi lại cấu hình này để chuyển cho học sinh!`
-          });
-          fetchUsersAndHistory();
-        }
+        onShowModal({
+          type: 'success',
+          title: 'Khôi phục mật khẩu',
+          message: `Mật khẩu mới của học sinh '${u.name}' là: ${generatedPass}. Vui lòng ghi lại cấu hình này để chuyển cho học sinh!`
+        });
+        fetchUsersAndHistory();
       } catch (err) {
         console.error(err);
+        onShowModal({ type: 'danger', title: 'Đặt lại mật khẩu thất bại', message: 'Không thể đặt lại mật khẩu. Vui lòng thử lại.' });
       }
     };
 
@@ -130,39 +117,34 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
 
     try {
       const extendedToIso = new Date(`${extendForm.expiryDate}T23:59:59Z`).toISOString();
-      const userColSnap = await getDocs(collection(db, 'users'));
-      const targetUserDoc = userColSnap.docs.find(d => d.data().id === activeUserToExtend.id);
 
-      if (targetUserDoc) {
-        // 1. Update user expiresAt parameter
-        await updateDoc(doc(db, 'users', targetUserDoc.id), {
-          expiresAt: extendedToIso
-        });
+      // 1. Update user expiresAt parameter
+      await updateDocById('users', activeUserToExtend.id, { expiresAt: extendedToIso });
 
-        // 2. Commit log audit trail inside /extensions on Firestore
-        const logPayload: Partial<ExtensionLog> = {
-          id: `ext_${Date.now()}`,
-          userId: activeUserToExtend.id,
-          username: activeUserToExtend.name,
-          grade: activeUserToExtend.grade,
-          extendedAt: new Date().toISOString(),
-          extendedTo: extendedToIso,
-          note: extendForm.note
-        };
+      // 2. Commit log audit trail inside /extensions on Firestore
+      const logPayload: Partial<ExtensionLog> = {
+        id: `ext_${Date.now()}`,
+        userId: activeUserToExtend.id,
+        username: activeUserToExtend.name,
+        grade: activeUserToExtend.grade,
+        extendedAt: new Date().toISOString(),
+        extendedTo: extendedToIso,
+        note: extendForm.note
+      };
 
-        await addDoc(collection(db, 'extensions'), logPayload);
+      await addDoc(collection(db, 'extensions'), logPayload);
 
-        onShowModal({
-          type: 'success',
-          title: 'Gia hạn gói thành công ⏱️',
-          message: `Thời lượng luyện tập của '${activeUserToExtend.name}' đã được kéo dài đến ngày ${extendForm.expiryDate}.`
-        });
+      onShowModal({
+        type: 'success',
+        title: 'Gia hạn gói thành công ⏱️',
+        message: `Thời lượng luyện tập của '${activeUserToExtend.name}' đã được kéo dài đến ngày ${extendForm.expiryDate}.`
+      });
 
-        setActiveUserToExtend(null);
-        fetchUsersAndHistory();
-      }
+      setActiveUserToExtend(null);
+      fetchUsersAndHistory();
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Gia hạn thất bại', message: 'Không thể gia hạn tài khoản học sinh. Vui lòng thử lại.' });
     }
   };
 

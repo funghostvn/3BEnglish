@@ -1,27 +1,40 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Exam, Passage, Question } from '../types';
-import { 
-  Upload, 
-  FileCode, 
-  Sparkles, 
-  FileText, 
-  Clock, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle, 
-  X, 
-  Check, 
-  Plus, 
-  Database, 
-  BookOpen, 
-  Pencil, 
-  Eye, 
-  Trash2, 
+import { Exam } from '../types';
+import { EXAM_CLASSIFICATIONS, DEFAULT_EXAM_CLASSIFICATION } from '../constants';
+import {
+  Upload,
+  FileCode,
+  Sparkles,
+  FileText,
+  Clock,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Check,
+  Plus,
+  Database,
+  BookOpen,
+  Pencil,
+  Eye,
+  Trash2,
   AlertTriangle,
   Info
 } from 'lucide-react';
+
+const MAX_PDF_SIZE_BYTES = 20 * 1024 * 1024; // 20MB per file
+
+// Accepts either a single exam object, a bare array of exams, or an
+// { exams: [...] } wrapper, and always normalizes to Partial<Exam>[].
+function normalizeParsedExams(parsed: unknown): Partial<Exam>[] {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).exams)) {
+    return (parsed as any).exams;
+  }
+  return [parsed as Partial<Exam>];
+}
 
 interface ImportExamViewProps {
   onShowModal: (config: { type: 'success' | 'warning' | 'danger' | 'info' | 'confirm'; title: string; message: string }) => void;
@@ -66,7 +79,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
   const [editNumQuestions, setEditNumQuestions] = useState<number>(40);
   const [editPublisher, setEditPublisher] = useState('');
   const [editYear, setEditYear] = useState<number>(new Date().getFullYear());
-  const [editClassification, setEditClassification] = useState('Đề thi thử từ các đơn vị');
+  const [editClassification, setEditClassification] = useState(DEFAULT_EXAM_CLASSIFICATION);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -96,7 +109,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
       setEditNumQuestions(exam.numQuestions || (exam.passages ? exam.passages.reduce((sum, p) => sum + (p.questions ? p.questions.length : 0), 0) : 40));
       setEditPublisher(exam.publisher || '');
       setEditYear(exam.year || new Date().getFullYear());
-      setEditClassification(exam.classification || 'Đề thi thử từ các đơn vị');
+      setEditClassification(exam.classification || DEFAULT_EXAM_CLASSIFICATION);
     } else {
       setEditTitle('');
       setEditExamName('');
@@ -106,22 +119,27 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
       setEditNumQuestions(40);
       setEditPublisher('');
       setEditYear(new Date().getFullYear());
-      setEditClassification('Đề thi thử từ các đơn vị');
+      setEditClassification(DEFAULT_EXAM_CLASSIFICATION);
     }
   }, [selectedReviewItem]);
 
-  // Queue background processor for PDF Gemini parsing
+  // Queue background processor for PDF Gemini parsing.
+  // isProcessingRef is a synchronous mutex: derived-from-state checks alone
+  // (queue.some(status === 'processing')) can race when this effect fires
+  // twice in close succession (e.g. two unrelated queue updates) before the
+  // "mark as processing" state update has committed, letting two PDFs start
+  // parsing concurrently. The ref closes that gap.
+  const isProcessingRef = useRef(false);
+
   useEffect(() => {
     const processNextPdf = async () => {
-      // Find next waiting PDF/AI parsing item
+      if (isProcessingRef.current) return;
+
       const nextItem = queue.find(item => item.status === 'waiting' && item.importMethod === 'pdf');
       if (!nextItem) return;
 
-      const isProcessing = queue.some(item => item.status === 'processing');
-      if (isProcessing) return;
-
-      // Update item to processing
-      setQueue(prev => prev.map(item => 
+      isProcessingRef.current = true;
+      setQueue(prev => prev.map(item =>
         item.id === nextItem.id ? { ...item, status: 'processing', progress: 'Đang chuẩn bị file...' } : item
       ));
 
@@ -133,7 +151,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
         const base64 = await fileToBase64(nextItem.file);
         if (!isComponentMounted.current) return;
 
-        setQueue(prev => prev.map(item => 
+        setQueue(prev => prev.map(item =>
           item.id === nextItem.id ? { ...item, progress: 'Gemini AI đang bóc tách cấu trúc...' } : item
         ));
 
@@ -154,31 +172,26 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
 
         if (!isComponentMounted.current) return;
 
-        setQueue(prev => prev.map(item => {
-          if (item.id === nextItem.id) {
-            const updated = {
-              ...item,
-              status: 'completed' as const,
-              progress: 'Bóc tách thành công ✨',
-              parsedExam: respData.exam
-            };
-            // Set first completed item as active review automatically
-            setTimeout(() => {
-              setSelectedReviewItem(updated);
-            }, 50);
-            return updated;
-          }
-          return item;
-        }));
+        const updatedItem = {
+          ...nextItem,
+          status: 'completed' as const,
+          progress: 'Bóc tách thành công ✨',
+          parsedExam: respData.exam
+        };
+        setQueue(prev => prev.map(item => (item.id === nextItem.id ? updatedItem : item)));
+        // Auto-select the freshly parsed item for review.
+        setSelectedReviewItem(updatedItem);
 
       } catch (err: any) {
         console.error(err);
         if (!isComponentMounted.current) return;
-        setQueue(prev => prev.map(item => 
-          item.id === nextItem.id 
+        setQueue(prev => prev.map(item =>
+          item.id === nextItem.id
             ? { ...item, status: 'failed', progress: 'Bóc tách thất bại ❌', error: err.message || 'Lỗi bóc tách AI.' }
             : item
         ));
+      } finally {
+        isProcessingRef.current = false;
       }
     };
 
@@ -190,9 +203,14 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const oversizedNames: string[] = [];
     const newItems: ImportQueueItem[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (file.size > MAX_PDF_SIZE_BYTES) {
+        oversizedNames.push(file.name);
+        continue;
+      }
       newItems.push({
         id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         sourceName: file.name,
@@ -201,6 +219,14 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
         progress: 'Đang xếp hàng chờ xử lý...',
         file: file,
         isSelected: isAllSelected
+      });
+    }
+
+    if (oversizedNames.length > 0) {
+      onShowModal({
+        type: 'warning',
+        title: 'Tệp PDF quá lớn',
+        message: `Các tệp sau vượt quá giới hạn ${MAX_PDF_SIZE_BYTES / (1024 * 1024)}MB và đã bị bỏ qua: ${oversizedNames.join(', ')}. Vui lòng nén hoặc tách nhỏ tệp trước khi tải lên.`
       });
     }
 
@@ -223,15 +249,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
         try {
           const text = event.target?.result as string;
           const parsed = JSON.parse(text);
-          
-          let examsToImport: Partial<Exam>[] = [];
-          if (Array.isArray(parsed)) {
-            examsToImport = parsed;
-          } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).exams)) {
-            examsToImport = (parsed as any).exams;
-          } else {
-            examsToImport = [parsed];
-          }
+          const examsToImport = normalizeParsedExams(parsed);
 
           // Generate a queue item for each exam structure in the file
           const items: ImportQueueItem[] = examsToImport.map((exam, index) => ({
@@ -286,14 +304,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
 
     try {
       const parsed = JSON.parse(pastedJson.trim());
-      let exams: Partial<Exam>[] = [];
-      if (Array.isArray(parsed)) {
-        exams = parsed;
-      } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).exams)) {
-        exams = (parsed as any).exams;
-      } else {
-        exams = [parsed];
-      }
+      const exams = normalizeParsedExams(parsed);
 
       const newItems: ImportQueueItem[] = exams.map((exam, idx) => ({
         id: `paste_${Date.now()}_${idx}`,
@@ -384,33 +395,26 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
   const handleApplyMetaEdit = () => {
     if (!selectedReviewItem) return;
 
-    setQueue(prev => prev.map(item => {
-      if (item.id === selectedReviewItem.id) {
-        const updatedExam: Partial<Exam> = {
-          ...(item.parsedExam || {}),
-          title: editTitle,
-          examName: editExamName,
-          examCode: editExamCode,
-          grade: editGrade,
-          duration: editDuration,
-          numQuestions: editNumQuestions,
-          publisher: editPublisher,
-          year: editYear,
-          classification: editClassification
-        };
-        const updatedItem = {
-          ...item,
-          sourceName: editTitle,
-          parsedExam: updatedExam
-        };
-        // Also update local selectedReviewItem memory
-        setTimeout(() => {
-          setSelectedReviewItem(updatedItem);
-        }, 15);
-        return updatedItem;
-      }
-      return item;
-    }));
+    const updatedExam: Partial<Exam> = {
+      ...(selectedReviewItem.parsedExam || {}),
+      title: editTitle,
+      examName: editExamName,
+      examCode: editExamCode,
+      grade: editGrade,
+      duration: editDuration,
+      numQuestions: editNumQuestions,
+      publisher: editPublisher,
+      year: editYear,
+      classification: editClassification
+    };
+    const updatedItem = {
+      ...selectedReviewItem,
+      sourceName: editTitle,
+      parsedExam: updatedExam
+    };
+
+    setQueue(prev => prev.map(item => (item.id === selectedReviewItem.id ? updatedItem : item)));
+    setSelectedReviewItem(updatedItem);
 
     onShowModal({
       type: 'success',
@@ -451,10 +455,14 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
         year: Number(item.parsedExam.year) || new Date().getFullYear(),
         createdAt: new Date().toISOString(),
         passages: item.parsedExam.passages || [],
-        classification: item.parsedExam.classification || "Đề thi thử từ các đơn vị"
+        classification: item.parsedExam.classification || DEFAULT_EXAM_CLASSIFICATION
       };
 
-      await addDoc(collection(db, 'exams'), newExam);
+      // Use setDoc with the generated id (not addDoc) so the Firestore
+      // document id always matches newExam.id — other views resolve exam
+      // docs directly via doc(db,'exams', exam.id) rather than re-querying,
+      // and an addDoc-assigned random id would silently break that.
+      await setDoc(doc(db, 'exams', generatedId), newExam);
       return true;
     } catch (err) {
       console.error(err);
@@ -906,6 +914,12 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
                                     if (selectedReviewItem?.id === item.id) {
                                       setSelectedReviewItem(null);
                                     }
+                                  } else {
+                                    onShowModal({
+                                      type: 'danger',
+                                      title: 'Có lỗi xảy ra',
+                                      message: 'Lỗi ghi vĩnh viễn dữ liệu Firestore. Vui lòng rà soát cài đặt liên kết Firebase của bạn.'
+                                    });
                                   }
                                 }}
                                 className="p-1 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg transition-colors cursor-pointer"
@@ -1054,9 +1068,9 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
                   onChange={(e) => setEditClassification(e.target.value)}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 font-semibold text-xs"
                 >
-                  <option value="Đề thi chính thức các năm">Đề thi chính thức các năm</option>
-                  <option value="Đề thi thử từ các đơn vị">Đề thi thử từ các đơn vị</option>
-                  <option value="Đề minh họa theo chủ đề">Đề minh họa theo chủ đề</option>
+                  {EXAM_CLASSIFICATIONS.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
                 </select>
               </div>
 

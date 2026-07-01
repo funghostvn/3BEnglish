@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Exam, Passage, Question, VOCABULARY_THEMES, GRAMMAR_THEMES } from '../types';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Exam, Question, VOCABULARY_THEMES, GRAMMAR_THEMES } from '../types';
+import { fetchCollection, updateExamById } from '../services/firestore';
 import { Search, Filter, AlertCircle, Edit, Check } from 'lucide-react';
 
 interface CategoryManagerViewProps {
@@ -29,12 +28,11 @@ export default function CategoryManagerView({ onShowModal }: CategoryManagerView
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const examCol = collection(db, 'exams');
-      const snap = await getDocs(examCol);
-      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Exam));
+      const list = await fetchCollection<Exam>('exams');
       setExams(list);
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Lỗi tải dữ liệu', message: 'Không thể tải danh sách đề thi. Vui lòng kiểm tra kết nối mạng và tải lại trang.' });
     } finally {
       setLoading(false);
     }
@@ -83,10 +81,10 @@ export default function CategoryManagerView({ onShowModal }: CategoryManagerView
     return list;
   };
 
-  const unfiltered = getFlatList();
+  const unfiltered = useMemo(() => getFlatList(), [exams]);
 
   // Filtered queries
-  const filtered = unfiltered.filter(item => {
+  const filtered = useMemo(() => unfiltered.filter(item => {
     // 1. Standard rules anomalous search
     if (nonStandardOnly) {
       if (item.isVocabStandard && item.isGrammarStandard) return false;
@@ -100,7 +98,7 @@ export default function CategoryManagerView({ onShowModal }: CategoryManagerView
       if (item.currentVocab !== selectedVocab) return false;
     }
     return true;
-  });
+  }), [unfiltered, nonStandardOnly, selectedGrammar, selectedVocab]);
 
   const handleEditClick = (item: FlatQuestion) => {
     setEditingLoc({
@@ -119,33 +117,32 @@ export default function CategoryManagerView({ onShowModal }: CategoryManagerView
       const examToUpdate = exams.find(e => e.id === editingLoc.examId);
       if (!examToUpdate) return;
 
-      const updatedPassages = [...examToUpdate.passages];
-      
-      // Update vocab (passage-wide)
-      updatedPassages[editingLoc.pIdx].vocabularyCategory = tempVocab;
-      
-      // Update grammar (question detail spec)
-      updatedPassages[editingLoc.pIdx].questions[editingLoc.qIdx].grammarCategory = tempGrammar;
+      // Deep-clone the passage/question being edited so we don't mutate the
+      // objects still referenced by the `exams` state array in place.
+      const updatedPassages = examToUpdate.passages.map((p, pIdx) => {
+        if (pIdx !== editingLoc.pIdx) return p;
+        return {
+          ...p,
+          vocabularyCategory: tempVocab,
+          questions: p.questions.map((q, qIdx) => (
+            qIdx === editingLoc.qIdx ? { ...q, grammarCategory: tempGrammar } : q
+          )),
+        };
+      });
 
-      const examSnap = await getDocs(collection(db, 'exams'));
-      const targetDoc = examSnap.docs.find(d => d.data().id === examToUpdate.id);
+      await updateExamById(examToUpdate.id, { passages: updatedPassages });
 
-      if (targetDoc) {
-        await updateDoc(doc(db, 'exams', targetDoc.id), {
-          passages: updatedPassages
-        });
+      onShowModal({
+        type: 'success',
+        title: 'Cập nhật danh mục thành công',
+        message: 'Từ điển từ vựng và kết cấu ngữ pháp chủ đề đã được đồng bộ hóa thành công vào đề thi.'
+      });
 
-        onShowModal({
-          type: 'success',
-          title: 'Cập nhật danh mục thành công',
-          message: 'Từ điển từ vựng và kết cấu ngữ pháp chủ đề đã được đồng bộ hóa thành công vào đề thi.'
-        });
-
-        setEditingLoc(null);
-        fetchExams();
-      }
+      setEditingLoc(null);
+      fetchExams();
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Cập nhật thất bại', message: 'Không thể lưu thay đổi phân loại. Vui lòng thử lại.' });
     }
   };
 

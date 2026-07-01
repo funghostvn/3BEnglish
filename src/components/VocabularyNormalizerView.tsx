@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
-import { db } from '../firebase';
+import React, { useEffect, useMemo, useState } from 'react';
+import { fetchCollection, updateExamById } from '../services/firestore';
 import { Exam, Passage, VOCABULARY_THEMES } from '../types';
 import { 
   Search, 
@@ -82,12 +81,11 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const examCol = collection(db, 'exams');
-      const snap = await getDocs(examCol);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Exam));
+      const list = await fetchCollection<Exam>('exams');
       setExams(list);
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Lỗi tải dữ liệu', message: 'Không thể tải danh sách đề thi. Vui lòng kiểm tra kết nối mạng và tải lại trang.' });
     } finally {
       setLoading(false);
     }
@@ -135,7 +133,7 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
   };
 
   // Helper: get sorted and filtered exams array
-  const getSortedExams = (): Exam[] => {
+  const computeSortedExams = (): Exam[] => {
     return [...exams].filter(exam => {
       // search title or examCode
       if (batchSearchQuery.trim()) {
@@ -184,6 +182,11 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
     });
   };
 
+  const sortedExams = useMemo(
+    () => computeSortedExams(),
+    [exams, batchSearchQuery, batchFilterGrade, batchFilterNormalized, sortBy, sortOrder]
+  );
+
   // Main task: Batch evaluate and normalization of multiple selected exams sequentially (robust, resilient to API congestion)
   const handleStartBatchNormalization = async () => {
     if (selectedExamIds.length === 0) {
@@ -200,7 +203,6 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
 
     try {
       const selectedExamsObj = exams.filter(e => selectedExamIds.includes(e.id));
-      const examSnap = await getDocs(collection(db, 'exams'));
       const nowStr = new Date().toISOString();
       let tempExams = [...exams];
       let successCount = 0;
@@ -293,16 +295,11 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
 
           const computedScore = calculateDifficultyScore(updatedPassages);
 
-          const targetDoc = examSnap.docs.find(d => d.data().id === exam.id);
-          if (targetDoc) {
-            const batch = writeBatch(db);
-            batch.update(doc(db, 'exams', targetDoc.id), {
-              passages: updatedPassages,
-              difficultyScore: computedScore,
-              lastNormalizedAt: nowStr
-            });
-            await batch.commit();
-          }
+          await updateExamById(exam.id, {
+            passages: updatedPassages,
+            difficultyScore: computedScore,
+            lastNormalizedAt: nowStr
+          });
 
           tempExams = tempExams.map(ex => {
             if (ex.id === exam.id) {
@@ -383,7 +380,7 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
     return list;
   };
 
-  const passageItems = getPassageItems();
+  const passageItems = useMemo(() => getPassageItems(), [exams]);
 
   // Aggregate unique non-standard themes & counts to show statistics & bulk action triggers
   const getNonStandardSummaries = () => {
@@ -406,10 +403,10 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
     })).sort((a, b) => b.count - a.count);
   };
 
-  const nonStandardSummaries = getNonStandardSummaries();
+  const nonStandardSummaries = useMemo(() => getNonStandardSummaries(), [passageItems]);
 
   // Apply search/filters on passage items
-  const filteredPassages = passageItems.filter(item => {
+  const filteredPassages = useMemo(() => passageItems.filter(item => {
     // 1. Filter standard VS non-standard
     if (showOnlyNonStandard && item.isStandard) {
       return false;
@@ -431,7 +428,7 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
     }
 
     return true;
-  });
+  }), [passageItems, showOnlyNonStandard, searchVocab, searchExam, filterGrade]);
 
   // Handle singular passage theme update
   const handleUpdateSinglePassage = async (examId: string, passageIndex: number, targetTheme: string) => {
@@ -446,28 +443,16 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
         vocabularyCategory: targetTheme
       };
 
-      const examSnap = await getDocs(collection(db, 'exams'));
-      const targetDoc = examSnap.docs.find(d => d.data().id === examId);
+      await updateExamById(examId, { passages: updatedPassages });
 
-      if (targetDoc) {
-        await updateDoc(doc(db, 'exams', targetDoc.id), {
-          passages: updatedPassages
-        });
+      // Trigger local memory update to avoid re-fetching the entire DB instantly
+      setExams(prev => prev.map(e => (e.id === examId ? { ...e, passages: updatedPassages } : e)));
 
-        // Trigger local memory update to avoid re-fetching the entire DB instantly
-        setExams(prev => prev.map(e => {
-          if (e.id === examId) {
-            return { ...e, passages: updatedPassages };
-          }
-          return e;
-        }));
-
-        onShowModal({
-          type: 'success',
-          title: 'Đã chuẩn hóa chủ đề',
-          message: `Cập nhật thành công chủ đề từ vựng thành '${targetTheme}' cho đoạn văn thuộc đề '${exam.title}'.`
-        });
-      }
+      onShowModal({
+        type: 'success',
+        title: 'Đã chuẩn hóa chủ đề',
+        message: `Cập nhật thành công chủ đề từ vựng thành '${targetTheme}' cho đoạn văn thuộc đề '${exam.title}'.`
+      });
     } catch (err: any) {
       console.error(err);
       onShowModal({
@@ -506,29 +491,22 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
         selectionGroup[examId].push(pIdx);
       });
 
-      const examSnap = await getDocs(collection(db, 'exams'));
-
       for (const [examId, indices] of Object.entries(selectionGroup)) {
         const exam = exams.find(e => e.id === examId);
         if (!exam) continue;
 
-        const updatedPassages = [...exam.passages];
-        indices.forEach(idx => {
-          if (updatedPassages[idx]) {
-            updatedPassages[idx].vocabularyCategory = bulkTargetTheme;
-          }
-        });
+        // Deep-clone the touched passages so we don't mutate objects still
+        // referenced by the `exams` state array in place.
+        const indexSet = new Set(indices);
+        const updatedPassages = exam.passages.map((p, idx) => (
+          indexSet.has(idx) ? { ...p, vocabularyCategory: bulkTargetTheme } : p
+        ));
 
-        const targetDoc = examSnap.docs.find(d => d.data().id === examId);
-        if (targetDoc) {
-          await updateDoc(doc(db, 'exams', targetDoc.id), {
-            passages: updatedPassages
-          });
+        await updateExamById(examId, { passages: updatedPassages });
 
-          // Sync local state
-          setExams(prev => prev.map(e => e.id === examId ? { ...e, passages: updatedPassages } : e));
-          successCount += indices.length;
-        }
+        // Sync local state
+        setExams(prev => prev.map(e => e.id === examId ? { ...e, passages: updatedPassages } : e));
+        successCount += indices.length;
       }
 
       setSelectedItemIds([]);
@@ -540,6 +518,7 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
 
     } catch (err: any) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Chuẩn hóa lô thất bại', message: err.message || 'Không thể chuẩn hóa các đoạn văn đã chọn. Vui lòng thử lại.' });
     } finally {
       setBtnLoading(null);
     }
@@ -565,8 +544,6 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
       const matchPassages = passageItems.filter(item => item.currentVocab === rawTheme || (rawTheme === '[Chưa được gán]' && !item.currentVocab));
       if (matchPassages.length === 0) return;
 
-      const examSnap = await getDocs(collection(db, 'exams'));
-
       // Group by exam
       const examGroup: { [examId: string]: number[] } = {};
       matchPassages.forEach(item => {
@@ -580,23 +557,18 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
         const exam = exams.find(e => e.id === examId);
         if (!exam) continue;
 
-        const updatedPassages = [...exam.passages];
-        indices.forEach(idx => {
-          if (updatedPassages[idx]) {
-            updatedPassages[idx].vocabularyCategory = targetTheme;
-          }
-        });
+        // Deep-clone the touched passages so we don't mutate objects still
+        // referenced by the `exams` state array in place.
+        const indexSet = new Set(indices);
+        const updatedPassages = exam.passages.map((p, idx) => (
+          indexSet.has(idx) ? { ...p, vocabularyCategory: targetTheme } : p
+        ));
 
-        const targetDoc = examSnap.docs.find(d => d.data().id === examId);
-        if (targetDoc) {
-          await updateDoc(doc(db, 'exams', targetDoc.id), {
-            passages: updatedPassages
-          });
+        await updateExamById(examId, { passages: updatedPassages });
 
-          // Sync local state
-          setExams(prev => prev.map(e => e.id === examId ? { ...e, passages: updatedPassages } : e));
-          successCount += indices.length;
-        }
+        // Sync local state
+        setExams(prev => prev.map(e => e.id === examId ? { ...e, passages: updatedPassages } : e));
+        successCount += indices.length;
       }
 
       onShowModal({
@@ -607,6 +579,7 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
 
     } catch (err: any) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Ánh xạ thất bại', message: err.message || 'Không thể ánh xạ nhóm chủ đề này. Vui lòng thử lại.' });
     } finally {
       setBtnLoading(null);
     }
@@ -1127,7 +1100,7 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
           <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-50">
               <h3 className="font-extrabold text-slate-900 text-xs md:text-sm">
-                Danh sách đề thi trong phân vùng ({getSortedExams().length} đề thi)
+                Danh sách đề thi trong phân vùng ({sortedExams.length} đề thi)
               </h3>
               <p className="text-slate-400 text-[10px]">Tích chọn các đề thi bên dưới để đưa vào chương trình chuẩn hóa lô.</p>
             </div>
@@ -1139,9 +1112,8 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
                     <th className="py-4 px-4 w-12 text-center">
                       <input
                         type="checkbox"
-                        checked={getSortedExams().length > 0 && getSortedExams().every(e => selectedExamIds.includes(e.id))}
+                        checked={sortedExams.length > 0 && sortedExams.every(e => selectedExamIds.includes(e.id))}
                         onChange={() => {
-                          const sortedExams = getSortedExams();
                           const areAllSelected = sortedExams.length > 0 && sortedExams.every(e => selectedExamIds.includes(e.id));
                           if (areAllSelected) {
                             setSelectedExamIds(prev => prev.filter(id => !sortedExams.some(se => se.id === id)));
@@ -1161,14 +1133,14 @@ export default function VocabularyNormalizerView({ onShowModal }: VocabularyNorm
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {getSortedExams().length === 0 ? (
+                  {sortedExams.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-12 text-center text-slate-400 font-bold">
                         Không tìm thấy đề thi phù hợp với tiêu chuẩn lọc hiện tại.
                       </td>
                     </tr>
                   ) : (
-                    getSortedExams().map((exam, idx) => {
+                    sortedExams.map((exam, idx) => {
                       const isSelected = selectedExamIds.includes(exam.id);
                       
                       // Count total passages and questions in this exam

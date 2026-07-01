@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Exam, Passage, Question, QuestionFeedback, VOCABULARY_THEMES, GRAMMAR_THEMES, DIFFICULTY_LEVELS } from '../types';
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { fetchCollection, updateDocById, updateExamById, deleteExamById } from '../services/firestore';
+import { EXAM_CLASSIFICATIONS, DEFAULT_EXAM_CLASSIFICATION } from '../constants';
 import { 
   Trash2, 
   Edit3, 
@@ -84,8 +84,12 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
         throw new Error("Dữ liệu phản hồi từ AI không đúng định dạng mong đợi.");
       }
 
-      // We have mapped evaluation, now let's apply it to the editingExam state
-      const updatedPassages = [...editingExam.passages];
+      // Deep-clone passages/questions so we never mutate the objects still
+      // referenced by the `editingExam` state (or `exams` list) in place.
+      const updatedPassages: Passage[] = editingExam.passages.map(p => ({
+        ...p,
+        questions: p.questions.map(q => ({ ...q })),
+      }));
       let updatedNumPassages = 0;
       let updatedNumQuestions = 0;
 
@@ -93,7 +97,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
         const pIdx = aiPassage.passageIndex;
         if (pIdx >= 0 && pIdx < updatedPassages.length) {
           const originalPassage = updatedPassages[pIdx];
-          
+
           if (aiPassage.vocabularyCategory) {
             originalPassage.vocabularyCategory = aiPassage.vocabularyCategory;
             updatedNumPassages++;
@@ -170,14 +174,10 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
   const fetchExamsAndFlags = async () => {
     setLoading(true);
     try {
-      const examCol = collection(db, 'exams');
-      const examSnap = await getDocs(examCol);
-      const examList = examSnap.docs.map(d => ({ id: d.id, ...d.data() } as Exam));
+      const examList = await fetchCollection<Exam>('exams');
       setExams(examList);
 
-      const flagCol = collection(db, 'feedbacks');
-      const flagSnap = await getDocs(flagCol);
-      const flagList = flagSnap.docs.map(d => ({ id: d.id, ...d.data() } as QuestionFeedback));
+      const flagList = await fetchCollection<QuestionFeedback>('feedbacks');
       // Sort: pending first
       flagList.sort((a, b) => {
         if (a.status === 'pending' && b.status === 'resolved') return -1;
@@ -187,6 +187,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
       setFeedbacks(flagList);
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Lỗi tải dữ liệu', message: 'Không thể tải danh sách đề thi/phản hồi. Vui lòng kiểm tra kết nối mạng và tải lại trang.' });
     } finally {
       setLoading(false);
     }
@@ -195,22 +196,19 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
   const handleDeleteExam = async (examId: string) => {
     const triggerConfirm = async () => {
       try {
-        const snap = await getDocs(collection(db, 'exams'));
-        const targetDoc = snap.docs.find(d => d.data().id === examId);
-        if (targetDoc) {
-          await deleteDoc(doc(db, 'exams', targetDoc.id));
-          onShowModal({
-            type: 'success',
-            title: 'Xóa thành công',
-            message: 'Đề thi đã được loại bỏ hoàn toàn khỏi kho lưu trữ.'
-          });
-          fetchExamsAndFlags();
-          if (editingExam?.id === examId) {
-            setEditingExam(null);
-          }
+        await deleteExamById(examId);
+        onShowModal({
+          type: 'success',
+          title: 'Xóa thành công',
+          message: 'Đề thi đã được loại bỏ hoàn toàn khỏi kho lưu trữ.'
+        });
+        fetchExamsAndFlags();
+        if (editingExam?.id === examId) {
+          setEditingExam(null);
         }
       } catch (err) {
         console.error(err);
+        onShowModal({ type: 'danger', title: 'Xóa thất bại', message: 'Không thể xóa đề thi. Vui lòng kiểm tra kết nối mạng và thử lại.' });
       }
     };
 
@@ -302,7 +300,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
   const handleResolveFeedback = async (fId: string) => {
     try {
-      await updateDoc(doc(db, 'feedbacks', fId), { status: 'resolved' });
+      await updateDocById('feedbacks', fId, { status: 'resolved' });
       onShowModal({
         type: 'success',
         title: 'Đã giải quyết phản hồi',
@@ -311,6 +309,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
       fetchExamsAndFlags();
     } catch (err) {
       console.error(err);
+      onShowModal({ type: 'danger', title: 'Thao tác thất bại', message: 'Không thể cập nhật trạng thái phản hồi. Vui lòng thử lại.' });
     }
   };
 
@@ -362,29 +361,24 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
     if (!editingExam) return;
 
     try {
-      const examDocSnap = await getDocs(collection(db, 'exams'));
-      const targetDoc = examDocSnap.docs.find(d => d.data().id === editingExam.id);
+      await updateExamById(editingExam.id, {
+        title: editingExam.title,
+        examName: editingExam.examName || '',
+        examCode: editingExam.examCode || '',
+        grade: Number(editingExam.grade) || 10,
+        duration: Number(editingExam.duration) || 60,
+        publisher: editingExam.publisher || '',
+        year: Number(editingExam.year) || new Date().getFullYear(),
+        classification: editingExam.classification || DEFAULT_EXAM_CLASSIFICATION
+      });
 
-      if (targetDoc) {
-        await updateDoc(doc(db, 'exams', targetDoc.id), {
-          title: editingExam.title,
-          examName: editingExam.examName || '',
-          examCode: editingExam.examCode || '',
-          grade: Number(editingExam.grade) || 10,
-          duration: Number(editingExam.duration) || 60,
-          publisher: editingExam.publisher || '',
-          year: Number(editingExam.year) || new Date().getFullYear(),
-          classification: editingExam.classification || 'Đề thi thử từ các đơn vị'
-        });
-
-        onShowModal({
-          type: 'success',
-          title: 'Cập nhật thành công',
-          message: `Dữ liệu thuộc tính chung của đề "${editingExam.title}" đã được lưu.`
-        });
-        setEditingExam(null);
-        fetchExamsAndFlags();
-      }
+      onShowModal({
+        type: 'success',
+        title: 'Cập nhật thành công',
+        message: `Dữ liệu thuộc tính chung của đề "${editingExam.title}" đã được lưu.`
+      });
+      setEditingExam(null);
+      fetchExamsAndFlags();
     } catch (err) {
       console.error(err);
       onShowModal({
@@ -400,29 +394,24 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
     if (!editingExam) return;
 
     try {
-      const examDocSnap = await getDocs(collection(db, 'exams'));
-      const targetDoc = examDocSnap.docs.find(d => d.data().id === editingExam.id);
+      // Compute total questions
+      let totalCount = 0;
+      editingExam.passages.forEach(p => {
+        totalCount += p.questions.length;
+      });
 
-      if (targetDoc) {
-        // Compute total questions
-        let totalCount = 0;
-        editingExam.passages.forEach(p => {
-          totalCount += p.questions.length;
-        });
+      await updateExamById(editingExam.id, {
+        passages: editingExam.passages,
+        numQuestions: totalCount
+      });
 
-        await updateDoc(doc(db, 'exams', targetDoc.id), {
-          passages: editingExam.passages,
-          numQuestions: totalCount
-        });
-
-        onShowModal({
-          type: 'success',
-          title: 'Lưu cấu trúc đề thi thành công',
-          message: `Nội dung chi tiết (${totalCount} câu hỏi) đã được viết thành công vào Firestore.`
-        });
-        setEditingExam(null);
-        fetchExamsAndFlags();
-      }
+      onShowModal({
+        type: 'success',
+        title: 'Lưu cấu trúc đề thi thành công',
+        message: `Nội dung chi tiết (${totalCount} câu hỏi) đã được viết thành công vào Firestore.`
+      });
+      setEditingExam(null);
+      fetchExamsAndFlags();
     } catch (err) {
       console.error(err);
       onShowModal({
@@ -445,7 +434,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
         numQuestions: exam.numQuestions,
         publisher: exam.publisher || '',
         year: exam.year || new Date().getFullYear(),
-        classification: exam.classification || 'Đề thi thử từ các đơn vị',
+        classification: exam.classification || DEFAULT_EXAM_CLASSIFICATION,
         passages: exam.passages.map(p => ({
           title: p.title || '',
           content: p.content || '',
@@ -520,7 +509,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           duration: Number(parsed.duration) || targetExam.duration,
           publisher: parsed.publisher || targetExam.publisher,
           year: Number(parsed.year) || targetExam.year,
-          classification: parsed.classification || targetExam.classification || 'Đề thi thử từ các đơn vị',
+          classification: parsed.classification || targetExam.classification || DEFAULT_EXAM_CLASSIFICATION,
           passages: parsed.passages,
           numQuestions: totalQCount
         };
@@ -530,18 +519,17 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           title: 'Xác nhận ghi đè dữ liệu tệp tin',
           message: `Bạn có chắc chắn muốn GHI ĐÈ toàn bộ nội dung của đề thi này bằng dữ liệu tệp tin "${file.name}" không? Hành động này sẽ cập nhật trực tiếp lên Cloud Firestore.`,
           onConfirm: async () => {
-            const snap = await getDocs(collection(db, 'exams'));
-            const targetDoc = snap.docs.find(d => d.data().id === overwriteExam.id);
-            if (targetDoc) {
-              await updateDoc(doc(db, 'exams', targetDoc.id), {
-                ...overwriteExam
-              });
+            try {
+              await updateExamById(overwriteExam.id, { ...overwriteExam });
               onShowModal({
                 type: 'success',
                 title: 'Nạp dữ liệu hoàn tất',
                 message: 'Đề thi đã được khôi phục/cập nhật thành công từ tệp JSON mới.'
               });
               fetchExamsAndFlags();
+            } catch (err) {
+              console.error(err);
+              onShowModal({ type: 'danger', title: 'Ghi đè thất bại', message: 'Không thể ghi dữ liệu tệp JSON lên Firestore. Vui lòng thử lại.' });
             }
           }
         });
@@ -659,26 +647,28 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
   };
 
   // Filtering list
-  const filteredExams = exams.filter(exam => {
-    const matchesGrade = gradeFilter === 'all' || String(exam.grade) === String(gradeFilter);
-    const matchesClassification = classificationFilter === 'all' || exam.classification === classificationFilter;
-    
+  const filteredExams = useMemo(() => {
     const s = searchQuery.toLowerCase().trim();
-    const matchesSearch = !s || 
-      (exam.title && exam.title.toLowerCase().includes(s)) ||
-      (exam.examName && exam.examName.toLowerCase().includes(s)) ||
-      (exam.examCode && exam.examCode.toLowerCase().includes(s)) ||
-      (exam.publisher && exam.publisher.toLowerCase().includes(s));
+    return exams.filter(exam => {
+      const matchesGrade = gradeFilter === 'all' || String(exam.grade) === String(gradeFilter);
+      const matchesClassification = classificationFilter === 'all' || exam.classification === classificationFilter;
 
-    return matchesGrade && matchesClassification && matchesSearch;
-  });
+      const matchesSearch = !s ||
+        (exam.title && exam.title.toLowerCase().includes(s)) ||
+        (exam.examName && exam.examName.toLowerCase().includes(s)) ||
+        (exam.examCode && exam.examCode.toLowerCase().includes(s)) ||
+        (exam.publisher && exam.publisher.toLowerCase().includes(s));
+
+      return matchesGrade && matchesClassification && matchesSearch;
+    });
+  }, [exams, gradeFilter, classificationFilter, searchQuery]);
 
   // Highlight / statistics totals
   const totalExams = exams.length;
   const totalPendingReports = feedbacks.filter(f => f.status === 'pending').length;
-  const officialExamsCount = exams.filter(e => e.classification === 'Đề thi chính thức các năm').length;
-  const trialExamsCount = exams.filter(e => e.classification === 'Đề thi thử từ các đơn vị').length;
-  const prepExamsCount = exams.filter(e => e.classification === 'Đề minh họa theo chủ đề').length;
+  const officialExamsCount = exams.filter(e => e.classification === EXAM_CLASSIFICATIONS[0]).length;
+  const trialExamsCount = exams.filter(e => e.classification === EXAM_CLASSIFICATIONS[1]).length;
+  const prepExamsCount = exams.filter(e => e.classification === EXAM_CLASSIFICATIONS[2]).length;
 
   // View: Immersive detailed workshop editor is up
   if (editingExam && editMode === 'detail') {
@@ -1119,13 +1109,13 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
               <div className="md:col-span-2">
                 <label className="block text-indigo-500 uppercase tracking-wider text-[9px] mb-1 font-extrabold">PHÂN LOẠI NHÓM ĐỀ THI (classification):</label>
                 <select
-                  value={editingExam.classification || 'Đề thi thử từ các đơn vị'}
+                  value={editingExam.classification || DEFAULT_EXAM_CLASSIFICATION}
                   onChange={(e) => updateGeneralFieldInDetail('classification', e.target.value)}
                   className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
                 >
-                  <option value="Đề thi chính thức các năm">Đề thi chính thức các năm</option>
-                  <option value="Đề thi thử từ các đơn vị">Đề thi thử từ các đơn vị</option>
-                  <option value="Đề minh họa theo chủ đề">Đề minh họa theo chủ đề</option>
+                  {EXAM_CLASSIFICATIONS.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1289,9 +1279,9 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                   className="w-full text-xs font-bold py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-700"
                 >
                   <option value="all">Tất cả Phân nhóm đề</option>
-                  <option value="Đề thi chính thức các năm">Đề thi chính thức các năm</option>
-                  <option value="Đề thi thử từ các đơn vị">Đề thi thử từ các đơn vị</option>
-                  <option value="Đề minh họa theo chủ đề">Đề minh họa theo chủ đề</option>
+                  {EXAM_CLASSIFICATIONS.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
                 </select>
               </div>
 
