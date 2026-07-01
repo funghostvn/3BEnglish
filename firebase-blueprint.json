@@ -1,0 +1,166 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile database for students and admins",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "name": { "type": "string" },
+        "password": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "grade": { "type": "string" },
+        "role": { "type": "string" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "username", "name", "password", "email", "phone", "grade", "role", "expiresAt", "createdAt"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "English practice exam structure containing passages and questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "grade": { "type": "integer" },
+        "examCode": { "type": "string" },
+        "numQuestions": { "type": "integer" },
+        "duration": { "type": "integer" },
+        "publisher": { "type": "string" },
+        "year": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "examName": { "type": "string" },
+        "passages": { "type": "array" },
+        "classification": { 
+          "type": "string",
+          "enum": [
+            "Đề thi chính thức các năm",
+            "Đề thi thử từ các đơn vị",
+            "Đề minh họa theo chủ đề"
+          ],
+          "description": "Phân loại nhóm đề thi tiếng Anh hiển thị cho học sinh"
+        }
+      },
+      "required": ["id", "title", "grade", "examCode", "numQuestions", "duration", "publisher", "year", "createdAt", "passages"]
+    },
+    "Attempt": {
+      "title": "Attempt",
+      "description": "Log of an exam attempt taken by a student or guest",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "examId": { "type": "string" },
+        "examTitle": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "grade": { "type": "integer" },
+        "correctCount": { "type": "integer" },
+        "totalCount": { "type": "integer" },
+        "score": { "type": "number" },
+        "timeSpent": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "answers": { "type": "object" },
+        "weakGrammar": { "type": "array" },
+        "weakVocab": { "type": "array" }
+      },
+      "required": ["id", "examId", "examTitle", "userId", "username", "grade", "correctCount", "totalCount", "score", "timeSpent", "createdAt", "answers"]
+    },
+    "Extension": {
+      "title": "Extension",
+      "description": "Gia han history logs of extending user subscriptions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "grade": { "type": "string" },
+        "extendedAt": { "type": "string", "format": "date-time" },
+        "extendedTo": { "type": "string", "format": "date-time" },
+        "note": { "type": "string" }
+      },
+      "required": ["id", "userId", "username", "grade", "extendedAt", "extendedTo", "note"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User flagged error reports on exam questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "examId": { "type": "string" },
+        "examTitle": { "type": "string" },
+        "questionNumber": { "type": "integer" },
+        "reportedBy": { "type": "string" },
+        "reportText": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "examId", "examTitle", "questionNumber", "reportedBy", "reportText", "createdAt", "status"]
+    },
+    "VocabPractice": {
+      "title": "VocabPractice",
+      "description": "Personal practice list items bookmarked by users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "word": { "type": "string" },
+        "level": { "type": "string" },
+        "topic": { "type": "string" },
+        "type": { "type": "string" },
+        "pronunciation": { "type": "string" },
+        "definition": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "word", "level", "topic", "type", "pronunciation", "definition", "createdAt"]
+    },
+    "Vocabulary": {
+      "title": "Vocabulary",
+      "description": "Dynamic vocabulary library item imported by users/admins",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "word": { "type": "string" },
+        "level": { "type": "string" },
+        "topic": { "type": "string" },
+        "type": { "type": "string" },
+        "pronunciation": { "type": "string" },
+        "definition": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "word", "level", "topic", "type", "pronunciation", "definition", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User files containing authentication and subscription parameters"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "English practice exams by school grade level"
+    },
+    "/attempts/{attemptId}": {
+      "schema": "Attempt",
+      "description": "Aggregated user progress of taken exams"
+    },
+    "/extensions/{extensionId}": {
+      "schema": "Extension",
+      "description": "Administrative renewal history logs"
+    },
+    "/feedbacks/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "Key correction requests and flagged options reports"
+    },
+    "/vocab_practice/{practiceId}": {
+      "schema": "VocabPractice",
+      "description": "Saved personal vocabulary flashcard items"
+    },
+    "/vocabulary_library/{vocabId}": {
+      "schema": "Vocabulary",
+      "description": "Dynamic custom vocabulary items added via file import"
+    }
+  }
+}

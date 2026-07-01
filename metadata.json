@@ -1,0 +1,8 @@
+{
+  "name": "Luyện đề Tiếng Anh 3 Cấp độ",
+  "description": "Chương trình luyện đề tiếng Anh độc lập cho Lớp 6, Lớp 10 và Lớp 12.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

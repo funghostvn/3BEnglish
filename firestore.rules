@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Standard validators for static schema
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUser(data) {
+      return data.username is string && data.username.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.phone is string && data.phone.size() <= 32 &&
+             data.grade is string && data.grade.size() <= 32 &&
+             data.role is string && (data.role == 'student' || data.role == 'admin' || data.role == 'guest') &&
+             data.expiresAt is string && data.expiresAt.size() <= 128 &&
+             data.createdAt is string && data.createdAt.size() <= 128;
+    }
+
+    function isValidExam(data) {
+      return data.title is string && data.title.size() <= 256 &&
+             data.examName is string && data.examName.size() <= 512 &&
+             data.examCode is string && data.examCode.size() <= 128 &&
+             data.grade is number &&
+             data.numQuestions is number &&
+             data.duration is number &&
+             data.publisher is string && data.publisher.size() <= 256 &&
+             data.year is number &&
+             data.createdAt is string && data.createdAt.size() <= 128 &&
+             data.passages is list &&
+             (!('classification' in data) || (data.classification is string && data.classification.size() <= 256));
+    }
+
+    function isValidAttempt(data) {
+      return data.examId is string && data.examId.size() <= 128 &&
+             data.examTitle is string && data.examTitle.size() <= 256 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.username is string && data.username.size() <= 128 &&
+             data.grade is number &&
+             data.correctCount is number &&
+             data.totalCount is number &&
+             data.score is number &&
+             data.timeSpent is number &&
+             data.createdAt is string && data.createdAt.size() <= 128 &&
+             data.answers is map &&
+             (!('weakGrammar' in data) || data.weakGrammar is list) &&
+             (!('weakVocab' in data) || data.weakVocab is list);
+    }
+
+    function isValidExtension(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.username is string && data.username.size() <= 128 &&
+             data.grade is string && data.grade.size() <= 32 &&
+             data.extendedAt is string && data.extendedAt.size() <= 128 &&
+             data.extendedTo is string && data.extendedTo.size() <= 128 &&
+             data.note is string && data.note.size() <= 1024;
+    }
+
+    function isValidFeedback(data) {
+      return data.examId is string && data.examId.size() <= 128 &&
+             data.examTitle is string && data.examTitle.size() <= 256 &&
+             data.questionNumber is number &&
+             data.reportedBy is string && data.reportedBy.size() <= 256 &&
+             data.reportText is string && data.reportText.size() <= 2048 &&
+             data.createdAt is string && data.createdAt.size() <= 128 &&
+             data.status is string && (data.status == 'pending' || data.status == 'resolved');
+    }
+
+    function isValidSrsItem(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.examId is string && data.examId.size() <= 128 &&
+             data.questionNumber is number &&
+             data.interval is number &&
+             data.status is string && (data.status == 'pending' || data.status == 'mastered') &&
+             data.nextReviewDate is string && data.nextReviewDate.size() <= 128 &&
+             data.lastReviewedDate is string && data.lastReviewedDate.size() <= 128;
+    }
+
+    function isValidVocabulary(data) {
+      return data.word is string && data.word.size() <= 256 &&
+             data.level is string && data.level.size() <= 32 &&
+             data.topic is string && data.topic.size() <= 256 &&
+             data.type is string && data.type.size() <= 64 &&
+             data.pronunciation is string && data.pronunciation.size() <= 256 &&
+             data.definition is string && data.definition.size() <= 2048 &&
+             data.createdAt is string && data.createdAt.size() <= 128;
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(userId) && isValidUser(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Collection: Exams
+    match /exams/{examId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(examId) && isValidExam(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Collection: Attempts
+    match /attempts/{attemptId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(attemptId) && isValidAttempt(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Collection: Extensions
+    match /extensions/{extensionId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(extensionId) && isValidExtension(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Collection: Feedbacks
+    match /feedbacks/{feedbackId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(feedbackId) && isValidFeedback(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Collection: SRS Items
+    match /srs_items/{itemId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(itemId) && isValidSrsItem(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Collection: Vocab Practice
+    match /vocab_practice/{practiceId} {
+      allow read, list: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Collection: Vocabulary Library
+    match /vocabulary_library/{vocabId} {
+      allow read, list: if true;
+      allow create, update: if isValidId(vocabId) && isValidVocabulary(request.resource.data);
+      allow delete: if true;
+    }
+
+    // Test connection doc
+    match /test/{document} {
+      allow read: if true;
+    }
+  }
+}
