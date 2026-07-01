@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Exam, Attempt, User, VOCABULARY_THEMES, GRAMMAR_THEMES } from '../types';
+import { where } from 'firebase/firestore';
+import { Exam, Attempt, User, SRSItem, CategoryPerf, VOCABULARY_THEMES, GRAMMAR_THEMES } from '../types';
 import { fetchCollection } from '../services/firestore';
-import { BarChart, BookOpen, Clock, Award, History, RotateCcw, TrendingUp, Trophy } from 'lucide-react';
+import ScoreTrendChart from './ScoreTrendChart';
+import {
+  BarChart, BookOpen, Clock, Award, History, RotateCcw, TrendingUp, Trophy,
+  RefreshCw, Flame, Target, Layers, AlertTriangle, Lock, Sparkles
+} from 'lucide-react';
 
 interface LeaderboardEntry {
   id: string;
@@ -20,6 +25,27 @@ interface DashboardViewProps {
   onRetakeExam: (examId: string, savedAnswers?: { [qNum: string]: string }) => void;
   onShowModal: (config: { type: 'success' | 'warning' | 'danger' | 'info'; title: string; message: string }) => void;
   onSelectWeakArea?: (type: 'vocab' | 'grammar', value: string) => void;
+  onGoToSrsReview?: () => void;
+}
+
+const CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+const MILESTONES = [5, 10, 25, 50, 100, 200];
+
+// Aggregate correct/wrong CategoryPerf maps across attempts into one map.
+function aggregatePerf(attempts: Attempt[], pick: (a: Attempt) => { [k: string]: CategoryPerf } | undefined) {
+  const agg: { [k: string]: CategoryPerf } = {};
+  let hasData = false;
+  attempts.forEach(att => {
+    const perf = pick(att);
+    if (!perf) return;
+    hasData = true;
+    Object.entries(perf).forEach(([k, v]) => {
+      if (!agg[k]) agg[k] = { correct: 0, wrong: 0 };
+      agg[k].correct += v.correct;
+      agg[k].wrong += v.wrong;
+    });
+  });
+  return { agg, hasData };
 }
 
 export default function DashboardView({
@@ -28,9 +54,11 @@ export default function DashboardView({
   onRetakeExam,
   onShowModal,
   onSelectWeakArea,
+  onGoToSrsReview,
 }: DashboardViewProps) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [srsItems, setSrsItems] = useState<SRSItem[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [sortBy, setSortBy] = useState<'attemptsCount' | 'totalTime' | 'monthAvg' | 'latestScore'>('totalTime');
   const [loading, setLoading] = useState(true);
@@ -98,6 +126,11 @@ export default function DashboardView({
 
       // 3. Fetch Users
       const userList = await fetchCollection<User>('users');
+
+      // 4. Fetch this user's own SRS review queue (spaced repetition)
+      const srsUserId = currentUser?.id || 'guest';
+      const srsList = await fetchCollection<SRSItem>('srs_items', where('userId', '==', srsUserId));
+      setSrsItems(srsList);
 
       // Compute statistics for non-admin users with >=1 attempts
       const now = new Date();
@@ -195,8 +228,6 @@ export default function DashboardView({
   }, [exams]);
 
   const totalQuestionsCount: number = dashboardStats.totalQuestionsCount;
-  const vocabThemeStats: Record<string, number> = dashboardStats.vocabThemeStats;
-  const grammarThemeStats: Record<string, number> = dashboardStats.grammarThemeStats;
   const difficultyStats: Record<string, number> = dashboardStats.difficultyStats;
   const examsByGrade: Record<number, number> = dashboardStats.examsByGrade;
 
@@ -208,24 +239,118 @@ export default function DashboardView({
     ? Math.round((attempts.reduce((sum, att) => sum + att.score, 0) / totalCompletedCount) * 10)
     : 0;
 
-  const { sortedWeakGrammar, sortedWeakVocab } = useMemo(() => {
-    const grammarWrongCounts: { [theme: string]: number } = {};
-    const vocabWrongCounts: { [theme: string]: number } = {};
+  // Score trend: last 12 attempts, oldest -> newest (attempts is sorted newest-first).
+  const trendPoints = useMemo(() => {
+    return attempts.slice(0, 12).slice().reverse().map(att => ({
+      label: new Date(att.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+      score: att.score,
+    }));
+  }, [attempts]);
 
-    attempts.forEach(att => {
-      (att.weakGrammar || []).forEach(g => {
-        grammarWrongCounts[g] = (grammarWrongCounts[g] || 0) + 1;
-      });
-      (att.weakVocab || []).forEach(v => {
-        vocabWrongCounts[v] = (vocabWrongCounts[v] || 0) + 1;
-      });
-    });
+  // Weak-area diagnostics: prefer true wrong/total rate from grammarPerf/
+  // vocabPerf (added later); fall back to legacy wrong-count frequency for
+  // attempts recorded before that field existed.
+  const weakAreas = useMemo(() => {
+    const { agg: grammarAgg, hasData: hasGrammarPerf } = aggregatePerf(attempts, a => a.grammarPerf);
+    const { agg: vocabAgg, hasData: hasVocabPerf } = aggregatePerf(attempts, a => a.vocabPerf);
+
+    const rankByRate = (agg: { [k: string]: CategoryPerf }) => Object.entries(agg)
+      .map(([key, v]) => ({ key, total: v.correct + v.wrong, wrong: v.wrong, rate: v.wrong / (v.correct + v.wrong) }))
+      .filter(x => x.total >= 2) // ignore categories seen only once (too noisy to rank)
+      .sort((a, b) => b.rate - a.rate || b.wrong - a.wrong)
+      .slice(0, 3)
+      .map(x => x.key);
+
+    const rankByCount = (list: string[][]) => {
+      const counts: { [k: string]: number } = {};
+      list.forEach(arr => arr.forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
+      return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+    };
 
     return {
-      sortedWeakGrammar: Object.entries(grammarWrongCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]),
-      sortedWeakVocab: Object.entries(vocabWrongCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]),
+      weakGrammar: hasGrammarPerf ? rankByRate(grammarAgg) : rankByCount(attempts.map(a => a.weakGrammar || [])),
+      weakVocab: hasVocabPerf ? rankByRate(vocabAgg) : rankByCount(attempts.map(a => a.weakVocab || [])),
+      isRateBased: hasGrammarPerf || hasVocabPerf,
     };
   }, [attempts]);
+
+  // Personal CEFR performance (only available for attempts recorded after
+  // difficultyPerf was added — older attempts don't contribute here).
+  const weakDifficulty = useMemo(() => {
+    const { agg, hasData } = aggregatePerf(attempts, a => a.difficultyPerf);
+    if (!hasData) return null;
+    return CEFR_ORDER
+      .filter(level => agg[level] && (agg[level].correct + agg[level].wrong) > 0)
+      .map(level => {
+        const v = agg[level];
+        const total = v.correct + v.wrong;
+        return { level, total, wrong: v.wrong, rate: total > 0 ? v.wrong / total : 0 };
+      });
+  }, [attempts]);
+
+  // Average score split by exam classification, so a student can tell their
+  // performance on real official exams apart from AI-generated practice.
+  const classificationStats = useMemo(() => {
+    const examClassMap = new Map<string, string>(exams.map(e => [e.id, e.classification || 'Chưa phân loại']));
+    const groups: { [label: string]: { sum: number; count: number } } = {};
+    attempts.forEach(att => {
+      let label: string;
+      if (att.examCode === 'RANDOM') label = 'Tự luyện AI';
+      else if (att.examCode === 'SRS') label = 'Ôn tập SRS';
+      else label = examClassMap.get(att.examId) || 'Đề khác / đã xóa';
+
+      if (!groups[label]) groups[label] = { sum: 0, count: 0 };
+      groups[label].sum += att.score;
+      groups[label].count++;
+    });
+    return Object.entries(groups)
+      .map(([label, v]) => ({ label, avg: v.sum / v.count, count: v.count }))
+      .sort((a, b) => b.count - a.count);
+  }, [exams, attempts]);
+
+  // Streak (consecutive practice days) + next attempt-count milestone.
+  const { streakDays, nextMilestone, attemptsToMilestone } = useMemo(() => {
+    const dateSet = new Set(attempts.map(a => new Date(a.createdAt).toDateString()));
+    let streak = 0;
+    const cursor = new Date();
+    if (!dateSet.has(cursor.toDateString())) {
+      cursor.setDate(cursor.getDate() - 1); // no practice yet today: streak counts up to yesterday
+    }
+    while (dateSet.has(cursor.toDateString())) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    const next = MILESTONES.find(m => m > totalCompletedCount) ?? null;
+    return { streakDays: streak, nextMilestone: next, attemptsToMilestone: next ? next - totalCompletedCount : 0 };
+  }, [attempts, totalCompletedCount]);
+
+  // SRS due-for-review count (for the current user's own review queue).
+  const srsDueCount = useMemo(() => {
+    const now = new Date();
+    return srsItems.filter(i => i.status === 'pending' && new Date(i.nextReviewDate) <= now).length;
+  }, [srsItems]);
+  const srsPendingCount = useMemo(() => srsItems.filter(i => i.status === 'pending').length, [srsItems]);
+
+  // Proactive nudge: how many official exams for the student's own grade are
+  // still untouched.
+  const nudgeText = useMemo(() => {
+    if (!currentUser || currentUser.role !== 'student' || !currentUser.grade) return null;
+    const gradeNum = parseInt(currentUser.grade, 10);
+    if (isNaN(gradeNum)) return null;
+    const officialExams = exams.filter(e => e.grade === gradeNum && e.classification === 'Đề thi chính thức các năm');
+    if (officialExams.length === 0) return null;
+    const attemptedExamIds = new Set(attempts.map(a => a.examId));
+    const remaining = officialExams.filter(e => !attemptedExamIds.has(e.id));
+    if (remaining.length === 0) return null;
+    return `Bạn còn ${remaining.length}/${officialExams.length} đề thi chính thức Lớp ${currentUser.grade} chưa luyện.`;
+  }, [currentUser, exams, attempts]);
+
+  const isGuestSession = !currentUser || currentUser.role === 'guest';
+  const isExpiredNonAdmin = !!currentUser && currentUser.role !== 'admin' && new Date().getTime() > new Date(currentUser.expiresAt).getTime();
+  const isAdminViewer = currentUser?.role === 'admin';
+
+  const sortedWeakGrammar = weakAreas.weakGrammar;
+  const sortedWeakVocab = weakAreas.weakVocab;
 
   // Sort the active leaderboard based on selected field
   const sortedLeaderboard = useMemo(() => {
@@ -256,9 +381,34 @@ export default function DashboardView({
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-200">
+
+      {/* Alert banners: expiry / guest limits / proactive nudge */}
+      {(isExpiredNonAdmin || isGuestSession || nudgeText) && (
+        <div className="space-y-3">
+          {isExpiredNonAdmin && (
+            <div className="bg-red-50 border border-red-200 text-red-800 text-xs px-5 py-3 rounded-2xl flex items-center gap-2.5 font-semibold">
+              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+              Gói học tập của bạn đã hết hạn. Hoạt động làm đề bị giới hạn tối đa 3 đề/ngày — hãy liên hệ giáo viên/admin để gia hạn.
+            </div>
+          )}
+          {isGuestSession && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-5 py-3 rounded-2xl flex items-center gap-2.5 font-semibold">
+              <Lock className="h-4 w-4 text-amber-500 shrink-0" />
+              Bạn đang dùng chế độ Khách, giới hạn tối đa 1 đề/ngày. Đăng ký tài khoản miễn phí để luyện tập không giới hạn và lưu lại tiến trình học tập.
+            </div>
+          )}
+          {nudgeText && (
+            <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs px-5 py-3 rounded-2xl flex items-center gap-2.5 font-semibold">
+              <Sparkles className="h-4 w-4 text-indigo-500 shrink-0" />
+              {nudgeText}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Bento Grid Layout Area */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-        
+
         {/* Tile 1: Profile Spotlight & Action Banner */}
         <div className="md:col-span-4 bg-slate-900 border border-slate-800 p-8 rounded-3xl text-white relative overflow-hidden flex flex-col justify-between min-h-[220px] shadow-sm">
           <div className="absolute right-0 top-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl -z-10" />
@@ -303,6 +453,40 @@ export default function DashboardView({
               Tỷ lệ chính xác trung bình là {averageCorrectionRate}% trên tất cả các nỗ lực luyện tập của bạn.
             </p>
           </div>
+        </div>
+
+        {/* Tile: Score trend chart */}
+        <div className="md:col-span-4 bg-white border border-slate-200/60 p-6 rounded-3xl shadow-xs flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-slate-900 font-bold font-display tracking-tight text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-indigo-600" /> Xu hướng điểm số ({trendPoints.length} lượt gần nhất)
+            </h4>
+          </div>
+          <ScoreTrendChart points={trendPoints} />
+        </div>
+
+        {/* Tile: SRS due-for-review */}
+        <div className="md:col-span-2 bg-gradient-to-br from-emerald-900 to-slate-900 text-white p-6 rounded-3xl shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="p-2.5 bg-emerald-500/20 rounded-2xl text-emerald-300">
+                <RefreshCw className="h-4 w-4" />
+              </span>
+              <span className="text-[10px] font-bold font-mono text-emerald-300/80 uppercase">SRS Review</span>
+            </div>
+            <p className="text-slate-300 text-[10px] font-extrabold uppercase tracking-wider">Câu hỏi đến hạn ôn tập</p>
+            <h3 className="text-3xl font-extrabold font-display mt-1 tracking-tight">{srsDueCount}</h3>
+            <p className="text-slate-400 text-[11px] mt-2 leading-relaxed">
+              Tổng {srsPendingCount} câu đang chờ ôn theo chu kỳ Spaced Repetition.
+            </p>
+          </div>
+          <button
+            onClick={onGoToSrsReview}
+            disabled={!onGoToSrsReview}
+            className="mt-4 w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
+          >
+            Ôn ngay →
+          </button>
         </div>
 
         {/* Tile 3: Exams Count Bento */}
@@ -362,7 +546,56 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Tile 6: Diagnostics assessment */}
+        {/* Tile: Streak + milestone */}
+        <div className="md:col-span-3 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <span className="p-3 bg-orange-50 rounded-2xl text-orange-500">
+              <Flame className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold font-mono text-slate-400">STREAK & MILESTONE</span>
+          </div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-wider">Chuỗi ngày luyện tập</p>
+              <h3 className="text-3xl font-extrabold font-display text-slate-900 mt-1 tracking-tight">
+                {streakDays} <span className="text-sm text-slate-400 font-bold">ngày</span>
+              </h3>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-400 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 justify-end">
+                <Target className="h-3 w-3" /> Mốc kế tiếp
+              </p>
+              <p className="text-sm font-bold text-indigo-600 mt-1">
+                {nextMilestone ? `Còn ${attemptsToMilestone} đề đến mốc ${nextMilestone}` : 'Đã đạt mốc cao nhất 🏆'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tile: Score split by exam classification */}
+        <div className="md:col-span-3 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-slate-900 font-bold font-display tracking-tight text-sm flex items-center gap-2">
+              <Layers className="h-4 w-4 text-indigo-600" /> Điểm theo loại đề
+            </h4>
+          </div>
+          {classificationStats.length === 0 ? (
+            <p className="text-slate-400 text-xs font-semibold">Chưa có dữ liệu để so sánh theo loại đề.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {classificationStats.map(stat => (
+                <div key={stat.label} className="flex items-center justify-between text-xs">
+                  <span className="text-slate-600 font-semibold truncate max-w-[55%]" title={stat.label}>{stat.label} <span className="text-slate-400 font-normal">({stat.count})</span></span>
+                  <span className={`font-mono font-extrabold ${stat.avg >= 8 ? 'text-emerald-600' : stat.avg >= 5 ? 'text-amber-600' : 'text-rose-600'}`}>
+                    {stat.avg.toFixed(1)} / 10
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Tile 6: Diagnostics assessment (rate-based when data available) */}
         <div className="md:col-span-3 bg-white p-7 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between min-h-[290px]">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -372,7 +605,10 @@ export default function DashboardView({
               )}
             </div>
             <h3 className="text-lg font-bold font-display tracking-tight text-slate-950 mb-1">Chủ điểm cần cải thiện 📈</h3>
-            
+            <p className="text-slate-400 text-[10px] font-semibold mb-1">
+              {weakAreas.isRateBased ? 'Xếp hạng theo tỷ lệ sai/tổng số câu đã gặp.' : 'Xếp hạng theo tần suất sai (chưa đủ dữ liệu tỷ lệ).'}
+            </p>
+
             {attempts.length === 0 ? (
               <p className="text-slate-400 text-xs mt-6 leading-relaxed font-semibold">
                 Bảng chuẩn đoán điểm yếu sẽ hiển thị ngay khi bạn thực hiện tối thiểu một lượt làm đề luyện tập.
@@ -427,7 +663,7 @@ export default function DashboardView({
               </div>
             )}
           </div>
-          
+
           <div className="border-t border-slate-100 pt-5 mt-6 flex justify-between text-xs text-slate-500 font-semibold">
             <span>Dự đoán năng lực:</span>
             <span className="font-bold text-indigo-600">
@@ -436,14 +672,49 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Tile 7: CEFR difficulty stats */}
+        {/* Tile: Personal weak CEFR levels */}
         <div className="md:col-span-3 bg-white p-7 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between min-h-[290px]">
           <div>
             <h4 className="text-slate-950 font-bold font-display tracking-tight text-base mb-1.5 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-indigo-600" /> Bản đồ độ khó CEFR Standard
+              <TrendingUp className="h-4 w-4 text-indigo-600" /> Điểm yếu theo cấp độ CEFR
             </h4>
-            <p className="text-slate-400 text-[11px] mb-4 font-semibold leading-relaxed">Phân phối lượng câu hỏi tích lũy theo thang tham chiếu năng lực Châu Âu.</p>
-            <div className="space-y-3 pt-1">
+            <p className="text-slate-400 text-[11px] mb-4 font-semibold leading-relaxed">Tỷ lệ sai của riêng bạn tại mỗi mức CEFR (dựa trên các lượt luyện gần đây).</p>
+            {weakDifficulty === null ? (
+              <p className="text-slate-400 text-xs leading-relaxed font-semibold">
+                Chưa đủ dữ liệu — số liệu này chỉ tính từ các lượt luyện thực hiện sau bản cập nhật này.
+              </p>
+            ) : weakDifficulty.length === 0 ? (
+              <p className="text-slate-400 text-xs leading-relaxed font-semibold">Chưa có dữ liệu câu hỏi theo cấp độ CEFR.</p>
+            ) : (
+              <div className="space-y-3 pt-1">
+                {weakDifficulty.map(item => {
+                  const pct = Math.round(item.rate * 100);
+                  return (
+                    <div key={item.level} className="flex items-center gap-3 text-xs font-semibold">
+                      <span className="font-mono text-sm font-bold text-slate-700 w-8">{item.level}</span>
+                      <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${pct >= 50 ? 'bg-rose-500' : pct >= 25 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-slate-500 text-[10px] w-20 text-right font-mono font-bold">{item.wrong}/{item.total} sai ({pct}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tile 7: CEFR difficulty distribution across the exam bank (not personal performance) */}
+        <div className="md:col-span-6 bg-white p-7 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between">
+          <div>
+            <h4 className="text-slate-950 font-bold font-display tracking-tight text-base mb-1.5 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-indigo-600" /> Bản đồ độ khó CEFR của Ngân hàng đề
+            </h4>
+            <p className="text-slate-400 text-[11px] mb-4 font-semibold leading-relaxed">Phân phối số lượng câu hỏi có sẵn trong kho đề theo từng mức CEFR — đây là thống kê kho học liệu, không phải năng lực cá nhân của bạn (xem tile "Điểm yếu theo cấp độ CEFR" ở trên để biết năng lực cá nhân).</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 pt-1">
               {Object.entries(difficultyStats).map(([lvl, val]) => {
                 const total = Object.values(difficultyStats).reduce((a, b) => a + b, 0);
                 const pct = total > 0 ? Math.round((val / total) * 100) : 0;
@@ -475,10 +746,11 @@ export default function DashboardView({
                 </h4>
                 <p className="text-slate-400 text-[11px] font-semibold leading-normal">
                   Xếp hạng học sinh theo các tiêu chí học tập tích lũy. Nhấn vào tiêu đề cột để thay đổi tiêu chí sắp xếp!
+                  {!isAdminViewer && ' Danh tính học sinh ngoài Top 3 được ẩn để bảo mật.'}
                 </p>
               </div>
             </div>
-            
+
             {/* Quick Filter Info */}
             <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full uppercase tracking-wider">
               Tháng {new Date().getMonth() + 1} / {new Date().getFullYear()}
@@ -496,26 +768,26 @@ export default function DashboardView({
                   <tr className="bg-slate-50/60 text-slate-500 text-[10px] font-bold border-b border-slate-200/60 uppercase tracking-wider">
                     <th className="px-6 py-4 text-center w-16">Hạng</th>
                     <th className="px-6 py-4">Học sinh</th>
-                    <th 
-                      onClick={() => setSortBy('attemptsCount')} 
+                    <th
+                      onClick={() => setSortBy('attemptsCount')}
                       className={`px-6 py-4 text-center cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortBy === 'attemptsCount' ? 'bg-indigo-50 text-indigo-600 font-extrabold' : ''}`}
                     >
                       Số đề đã luyện {sortBy === 'attemptsCount' ? '▼' : '◇'}
                     </th>
-                    <th 
-                      onClick={() => setSortBy('totalTime')} 
+                    <th
+                      onClick={() => setSortBy('totalTime')}
                       className={`px-6 py-4 text-center cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortBy === 'totalTime' ? 'bg-indigo-50 text-indigo-600 font-extrabold' : ''}`}
                     >
                       Thời gian luyện tập {sortBy === 'totalTime' ? '▼' : '◇'}
                     </th>
-                    <th 
-                      onClick={() => setSortBy('latestScore')} 
+                    <th
+                      onClick={() => setSortBy('latestScore')}
                       className={`px-6 py-4 text-center cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortBy === 'latestScore' ? 'bg-indigo-50 text-indigo-600 font-extrabold' : ''}`}
                     >
                       Điểm gần nhất {sortBy === 'latestScore' ? '▼' : '◇'}
                     </th>
-                    <th 
-                      onClick={() => setSortBy('monthAvg')} 
+                    <th
+                      onClick={() => setSortBy('monthAvg')}
                       className={`px-6 py-4 text-center cursor-pointer select-none transition-colors hover:bg-slate-100 ${sortBy === 'monthAvg' ? 'bg-indigo-50 text-indigo-600 font-extrabold' : ''}`}
                     >
                       Điểm TB tháng này {sortBy === 'monthAvg' ? '▼' : '◇'}
@@ -525,6 +797,8 @@ export default function DashboardView({
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                   {sortedLeaderboard.map((item, index) => {
                     const isTopThree = index < 3;
+                    const isSelf = !!currentUser && currentUser.id === item.id;
+                    const revealIdentity = isAdminViewer || isTopThree || isSelf;
                     const trophyMap = ['🥇', '🥈', '🥉'];
                     const badgeColors = [
                       'bg-amber-50 text-amber-800 border-amber-200 font-extrabold',
@@ -533,7 +807,7 @@ export default function DashboardView({
                     ];
 
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/40 transition-colors">
+                      <tr key={item.id} className={`hover:bg-slate-50/40 transition-colors ${isSelf ? 'bg-indigo-50/20' : ''}`}>
                         <td className="px-6 py-4 text-center">
                           {isTopThree ? (
                             <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs border ${badgeColors[index]} shadow-3xs`}>
@@ -547,9 +821,11 @@ export default function DashboardView({
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="font-extrabold text-slate-900 text-sm">{item.name}</span>
+                            <span className="font-extrabold text-slate-900 text-sm">
+                              {revealIdentity ? item.name : 'Học sinh ẩn danh'}{isSelf && !isAdminViewer ? ' (Bạn)' : ''}
+                            </span>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[10px] font-mono text-slate-400 font-medium">@{item.username}</span>
+                              <span className="text-[10px] font-mono text-slate-400 font-medium">@{revealIdentity ? item.username : '••••••'}</span>
                               <span className="text-slate-300 text-[10px]">•</span>
                               <span className="px-1.5 py-0.2 bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-500 uppercase tracking-tight">
                                 Lớp {item.grade === 'admin' ? 'Admin' : item.grade}

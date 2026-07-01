@@ -654,6 +654,7 @@ export default function App() {
               }
               setActiveTab('custom_training');
             }}
+            onGoToSrsReview={() => setActiveTab('custom_training')}
           />
         );
       case 'practice':
@@ -708,6 +709,7 @@ export default function App() {
             currentUser={currentUser}
             onRetakeExam={handleVerifyPracticeEntrance}
             onShowModal={showCustomModal}
+            onGoToSrsReview={() => setActiveTab('custom_training')}
           />
         );
     }

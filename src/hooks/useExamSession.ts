@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { doc, collection, writeBatch, addDoc, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { fetchCollection } from '../services/firestore';
-import { Exam, Passage, Question, Attempt, QuestionFeedback, SRSItem, User } from '../types';
+import { Exam, Passage, Question, Attempt, QuestionFeedback, SRSItem, User, CategoryPerf } from '../types';
 import { MIN_ATTEMPT_SECONDS_TO_SAVE } from '../constants';
 
 export type ModalConfig = {
@@ -427,14 +427,29 @@ export function useExamSession(
     let correctCount = 0;
     const weakGrammar: string[] = [];
     const weakVocab: string[] = [];
+    const grammarPerf: { [category: string]: CategoryPerf } = {};
+    const vocabPerf: { [category: string]: CategoryPerf } = {};
+    const difficultyPerf: { [level: string]: CategoryPerf } = {};
+
+    const bumpPerf = (map: { [key: string]: CategoryPerf }, key: string, isCorrect: boolean) => {
+      if (!map[key]) map[key] = { correct: 0, wrong: 0 };
+      if (isCorrect) map[key].correct++;
+      else map[key].wrong++;
+    };
 
     questionsList.forEach(q => {
       const ans = userAnswers[q.questionNumber];
-      if (ans === q.correctAnswer) {
+      const isCorrect = ans === q.correctAnswer;
+      const parentPassage = (activeExam.passages || []).find(p => (p.questions || []).some(qy => qy.questionNumber === q.questionNumber));
+
+      if (q.grammarCategory) bumpPerf(grammarPerf, q.grammarCategory, isCorrect);
+      if (parentPassage && parentPassage.vocabularyCategory) bumpPerf(vocabPerf, parentPassage.vocabularyCategory, isCorrect);
+      if (q.difficulty) bumpPerf(difficultyPerf, q.difficulty, isCorrect);
+
+      if (isCorrect) {
         correctCount++;
       } else {
         if (q.grammarCategory) weakGrammar.push(q.grammarCategory);
-        const parentPassage = (activeExam.passages || []).find(p => (p.questions || []).some(qy => qy.questionNumber === q.questionNumber));
         if (parentPassage && parentPassage.vocabularyCategory) {
           weakVocab.push(parentPassage.vocabularyCategory);
         }
@@ -534,7 +549,10 @@ export function useExamSession(
         createdAt: new Date().toISOString(),
         answers: userAnswers,
         weakGrammar: Array.from(new Set(weakGrammar)),
-        weakVocab: Array.from(new Set(weakVocab))
+        weakVocab: Array.from(new Set(weakVocab)),
+        grammarPerf,
+        vocabPerf,
+        difficultyPerf
       });
 
       await dbBatch.commit();

@@ -49,6 +49,11 @@ export interface Exam {
   lastNormalizedAt?: string; // ISO timestamp of the last batch normalization
 }
 
+export interface CategoryPerf {
+  correct: number;
+  wrong: number;
+}
+
 export interface Attempt {
   id: string;
   examId: string;
@@ -65,6 +70,12 @@ export interface Attempt {
   answers: { [qNumber: string]: string };
   weakGrammar: string[];
   weakVocab: string[];
+  // Per-category correct/wrong counts for this attempt. Optional: attempts
+  // recorded before this field was added won't have it, so consumers must
+  // fall back to weakGrammar/weakVocab-based counting for older data.
+  grammarPerf?: { [category: string]: CategoryPerf };
+  vocabPerf?: { [category: string]: CategoryPerf };
+  difficultyPerf?: { [level: string]: CategoryPerf };
 }
 
 export interface ExtensionLog {
