@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { VOCABULARY_THEMES, GRAMMAR_THEMES, DIFFICULTY_LEVELS, User } from '../types';
 import { useExamSession, ModalConfig } from '../hooks/useExamSession';
 import ExamRunner from './ExamRunner';
+import ResumeSessionBanner from './ResumeSessionBanner';
 import { ArrowRight, Sparkles, RefreshCw, Clock } from 'lucide-react';
 
 interface CustomTrainingViewProps {
@@ -71,6 +72,15 @@ export default function CustomTrainingView({
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-200">
+
+      {/* Offer to restore an interrupted AI-custom/SRS quiz session */}
+      {session.pendingResume && (session.pendingResume.examCode === 'RANDOM' || session.pendingResume.examCode === 'SRS') && (
+        <ResumeSessionBanner
+          pending={session.pendingResume}
+          onResume={session.resumeSavedSession}
+          onDiscard={session.discardSavedSession}
+        />
+      )}
 
       {/* Top action cards (Custom Generator & SRS) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -86,7 +86,10 @@ export default function DashboardView({
       const examList = await fetchCollection<Exam>('exams');
       setExams(examList);
 
-      // 2. Fetch All Attempts (needed in full: leaderboard aggregates every student)
+      // 2. Fetch all attempts. The leaderboard aggregates every student, so the
+      // full set is needed here. (A denormalized per-user aggregate would let
+      // this be O(students) instead of O(all attempts), but that requires new
+      // security rules on the AI Studio-managed database — see notes.)
       let allAttemptsList = await fetchCollection<Attempt>('attempts');
 
       // Filter out invalid attempts (too short: likely accidental/rage-quit submits)
@@ -124,12 +127,12 @@ export default function DashboardView({
       filteredAttempts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setAttempts(filteredAttempts);
 
-      // 3. Fetch Users
-      const userList = await fetchCollection<User>('users');
-
-      // 4. Fetch this user's own SRS review queue (spaced repetition)
-      const srsUserId = currentUser?.id || 'guest';
-      const srsList = await fetchCollection<SRSItem>('srs_items', where('userId', '==', srsUserId));
+      // 3. Fetch users (for the leaderboard) and 4. this user's own SRS queue,
+      // in parallel.
+      const [userList, srsList] = await Promise.all([
+        fetchCollection<User>('users'),
+        fetchCollection<SRSItem>('srs_items', where('userId', '==', currentUser?.id || 'guest')),
+      ]);
       setSrsItems(srsList);
 
       // Compute statistics for non-admin users with >=1 attempts

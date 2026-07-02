@@ -25,6 +25,10 @@ Configured via `.env` (see `.env.example`), loaded by `dotenv` in `server.ts`:
 
 Firebase project connection itself is **not** env-based — it's hardcoded in `firebase-applet-config.json` and imported directly by `src/firebase.ts`.
 
+### CRITICAL: the live Firestore is AI Studio-managed, NOT the `firebase deploy` target
+
+The runtime database is a **named** Firestore (`firestoreDatabaseId: ai-studio-c465d9e4-…`) inside project **`gen-lang-client-0521048048`** ("Default Gemini Project", Enterprise edition), provisioned and rule-managed by AI Studio. Meanwhile `.firebaserc`/`firebase.json` point `firebase deploy` at project **`luyende-bff3d`**'s `(default)` database — so deploying `firestore.rules`/`firestore.indexes.json` from this repo does **NOT** affect the database the app actually reads/writes (only hosting on `luyende-bff3d.web.app` matters there). Practical consequences: (1) new Firestore collections will be rejected with `permission-denied` unless AI Studio's rules already allow them — stick to the existing collections; (2) composite indexes can't be declared from here, so client queries must stay single-field (equality) and do any additional filtering/sorting client-side; (3) treat `firestore.rules` in this repo as a mirror of what AI Studio enforces, not as a deployable source of truth.
+
 ## Architecture
 
 ### No app-level backend API for data — Firestore is called directly from components

@@ -24,6 +24,30 @@ interface MatchingQuestionItem {
   vocabularyCategory?: string;
 }
 
+// ---- In-progress session autosave (survives accidental refresh/close) ----
+const AUTOSAVE_KEY = 'exam_prep_active_session_v1';
+const AUTOSAVE_MAX_AGE_MS = 6 * 60 * 60 * 1000; // saved sessions older than 6h are discarded
+
+interface SavedSession {
+  exam: Exam;
+  userAnswers: { [qNumber: string]: string };
+  markedQuestions: { [qNumber: string]: boolean };
+  timeRemaining: number;
+  totalQuizTime: number;
+  isSrsQuiz: boolean;
+  savedAt: string; // ISO
+  userKey: string; // owner (user id or 'guest') — a save never resumes under another account
+}
+
+// Lightweight summary of a recoverable session, for lobby "resume?" banners.
+export interface PendingResume {
+  examTitle: string;
+  examCode: string;
+  savedAt: string;
+  answeredCount: number;
+  totalCount: number;
+}
+
 export function formatTimer(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -62,9 +86,20 @@ export function useExamSession(
   const [showAllPassages, setShowAllPassages] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'passage' | 'question'>('question');
 
+  // Non-blocking reading notice shown when the active question belongs to a
+  // different passage than the previous one (replaces the old modal, which
+  // interrupted students mid-exam while the timer kept running).
+  const [passageNotice, setPassageNotice] = useState<string | null>(null);
+
+  // Recoverable in-progress session found in localStorage (if any).
+  const [pendingResume, setPendingResume] = useState<PendingResume | null>(null);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const passageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const prevPassageIdxRef = useRef<number | null>(null);
+  const timeRemainingRef = useRef(timeRemaining);
+
+  const userKey = currentUser?.id || 'guest';
 
   const fetchExams = useCallback(async () => {
     setLoading(true);
@@ -109,6 +144,96 @@ export function useExamSession(
     fetchExams();
     fetchSrsItems();
   }, [fetchExams, fetchSrsItems]);
+
+  useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+
+  // Detect a recoverable session for this user on mount / account switch.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) { setPendingResume(null); return; }
+      const saved = JSON.parse(raw) as SavedSession;
+      const age = Date.now() - new Date(saved.savedAt).getTime();
+      if (!saved.exam || saved.userKey !== userKey || isNaN(age) || age > AUTOSAVE_MAX_AGE_MS) {
+        setPendingResume(null);
+        return;
+      }
+      setPendingResume({
+        examTitle: saved.exam.title,
+        examCode: saved.exam.examCode || '',
+        savedAt: saved.savedAt,
+        answeredCount: Object.keys(saved.userAnswers || {}).length,
+        totalCount: saved.exam.numQuestions || 0,
+      });
+    } catch {
+      localStorage.removeItem(AUTOSAVE_KEY);
+      setPendingResume(null);
+    }
+  }, [userKey]);
+
+  // Best-effort snapshot of the live session. Saves are answer-driven plus a
+  // 15s heartbeat/beforeunload (below) so remaining time stays fresh without
+  // serializing the exam JSON every timer tick.
+  const persistSession = useCallback(() => {
+    if (!activeExam || !examActive || graded) return;
+    try {
+      const payload: SavedSession = {
+        exam: activeExam,
+        userAnswers,
+        markedQuestions,
+        timeRemaining: timeRemainingRef.current,
+        totalQuizTime,
+        isSrsQuiz,
+        savedAt: new Date().toISOString(),
+        userKey,
+      };
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+    } catch { /* quota/unavailable — autosave is best-effort only */ }
+  }, [activeExam, examActive, graded, userAnswers, markedQuestions, totalQuizTime, isSrsQuiz, userKey]);
+
+  // Save whenever answers/marks change (persistSession identity tracks them)…
+  useEffect(() => { persistSession(); }, [persistSession]);
+
+  // …plus heartbeat + tab-close flush while a session is live.
+  useEffect(() => {
+    if (!examActive || graded) return;
+    window.addEventListener('beforeunload', persistSession);
+    const heartbeat = setInterval(persistSession, 15000);
+    return () => {
+      window.removeEventListener('beforeunload', persistSession);
+      clearInterval(heartbeat);
+    };
+  }, [examActive, graded, persistSession]);
+
+  const clearSavedSession = useCallback(() => {
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch { /* ignore */ }
+    setPendingResume(null);
+  }, []);
+
+  // Re-open the saved session exactly where the student left off.
+  const resumeSavedSession = () => {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as SavedSession;
+      if (!saved.exam || saved.userKey !== userKey) return;
+      setActiveExam(saved.exam);
+      setIsSrsQuiz(!!saved.isSrsQuiz);
+      setUserAnswers(saved.userAnswers || {});
+      setMarkedQuestions(saved.markedQuestions || {});
+      setActiveQuestionIdx(0);
+      setTimeRemaining(Math.max(30, saved.timeRemaining || 0));
+      setTotalQuizTime(saved.totalQuizTime || saved.exam.duration * 60);
+      setExamActive(true);
+      setGraded(false);
+      setScoreSummary(null);
+      setFeedbackText('');
+      setReportingQNum(null);
+      setPendingResume(null);
+    } catch {
+      clearSavedSession();
+    }
+  };
 
   // Timer loop
   useEffect(() => {
@@ -177,18 +302,24 @@ export function useExamSession(
 
       if (prevPassageIdxRef.current !== null && prevPassageIdxRef.current !== activePassageIdx) {
         setActiveMobileTab('passage');
-        onShowModal({
-          type: 'info',
-          title: '📖 Đọc đoạn văn mới!',
-          message: `Câu hỏi mới dựa trên một đoạn văn mới (Đoạn số ${activePassageIdx + 1}). Hãy đọc kĩ bài khoá trước khi trả lời.`
-        });
+        // Non-blocking toast (rendered by ExamRunner) instead of a modal so the
+        // student is never forced to stop and dismiss anything mid-exam.
+        setPassageNotice(`Câu hỏi này thuộc Đoạn văn số ${activePassageIdx + 1} — hãy đọc kỹ bài khoá trước khi trả lời.`);
       }
       prevPassageIdxRef.current = activePassageIdx;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeQuestionIdx, activeExam]);
 
-  // Keyboard navigation
+  // Auto-dismiss the passage notice toast.
+  useEffect(() => {
+    if (!passageNotice) return;
+    const t = setTimeout(() => setPassageNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [passageNotice]);
+
+  // Keyboard navigation: ←/→ moves between questions; A-D (or 1-4) answers the
+  // current question directly in single-question layout.
   useEffect(() => {
     if (!examActive || !activeExam) return;
 
@@ -199,6 +330,7 @@ export function useExamSession(
       ) {
         return;
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return; // keep browser shortcuts intact
       if (e.key === 'ArrowLeft') {
         setActiveQuestionIdx(prev => Math.max(0, prev - 1));
       } else if (e.key === 'ArrowRight') {
@@ -206,12 +338,20 @@ export function useExamSession(
           const flatMapLength = activeExam.passages.reduce((sum, pass) => sum + (pass.questions || []).length, 0);
           return Math.min(flatMapLength - 1, prev + 1);
         });
+      } else if (!graded && layoutMode === 'single') {
+        const digitMap: { [k: string]: string } = { '1': 'A', '2': 'B', '3': 'C', '4': 'D' };
+        const letter = e.key.length === 1 ? e.key.toUpperCase() : '';
+        const choice = digitMap[e.key] || (['A', 'B', 'C', 'D'].includes(letter) ? letter : null);
+        const q = questionsList[activeQuestionIdx];
+        if (choice && q && q.options && choice in q.options) {
+          setUserAnswers(prev => ({ ...prev, [q.questionNumber]: choice }));
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [examActive, activeExam]);
+  }, [examActive, activeExam, graded, layoutMode, questionsList, activeQuestionIdx]);
 
   const resetSessionState = (durationSeconds: number) => {
     setUserAnswers({});
@@ -423,6 +563,7 @@ export function useExamSession(
   const forceGradeSubmit = async () => {
     if (!activeExam) return;
     setGraded(true);
+    clearSavedSession(); // the session is finished — nothing left to resume
 
     let correctCount = 0;
     const weakGrammar: string[] = [];
@@ -612,6 +753,7 @@ export function useExamSession(
     setExamActive(false);
     setGraded(false);
     setScoreSummary(null);
+    clearSavedSession();
     fetchExams();
   };
 
@@ -626,6 +768,8 @@ export function useExamSession(
     showAllPassages, setShowAllPassages, activeMobileTab, setActiveMobileTab,
     questionsList, currentQuestion,
     passageRefs,
+    passageNotice,
+    pendingResume, resumeSavedSession, discardSavedSession: clearSavedSession,
     getActivePassageIdx, jumpToPassage,
     handleSelectOption, toggleMarked,
     startDirectExam, startExamForReview, generateCustomQuiz, generateSrsQuiz,

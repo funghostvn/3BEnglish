@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { collection, getDocs, doc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { collection, getDocs, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { db, auth } from './firebase';
 import { User, Exam, Attempt } from './types';
 import { SEED_USERS, SEED_EXAMS } from './seedData';
 
-// Subviews
-import DashboardView from './components/DashboardView';
-import PracticeView from './components/PracticeView';
-import CustomTrainingView from './components/CustomTrainingView';
-import ExamManagerView from './components/ExamManagerView';
-import CategoryManagerView from './components/CategoryManagerView';
-import UserAdminView from './components/UserAdminView';
-import ImportExamView from './components/ImportExamView';
-import VocabularyNormalizerView from './components/VocabularyNormalizerView';
-import VocabularyView from './components/VocabularyView';
+// Subviews are code-split so a student/guest never downloads the heavy
+// admin/vocabulary bundles (ExamManager, VocabularyView + motion, etc.) unless
+// they actually open those tabs.
+const DashboardView = lazy(() => import('./components/DashboardView'));
+const PracticeView = lazy(() => import('./components/PracticeView'));
+const CustomTrainingView = lazy(() => import('./components/CustomTrainingView'));
+const ExamManagerView = lazy(() => import('./components/ExamManagerView'));
+const CategoryManagerView = lazy(() => import('./components/CategoryManagerView'));
+const UserAdminView = lazy(() => import('./components/UserAdminView'));
+const ImportExamView = lazy(() => import('./components/ImportExamView'));
+const VocabularyNormalizerView = lazy(() => import('./components/VocabularyNormalizerView'));
+const VocabularyView = lazy(() => import('./components/VocabularyView'));
 import Modal from './components/Modal';
 
 // Icons
@@ -422,11 +424,11 @@ export default function App() {
     }
 
     try {
-      // Check registered grade restriction for student role
-      const examDocSnap = await getDocs(collection(db, 'exams'));
-      const foundExam = examDocSnap.docs
-        .map(d => ({ id: d.id, ...d.data() } as Exam))
-        .find(e => e.id === examId);
+      // Check registered grade restriction for student role.
+      // Fetch only the single exam by its id field instead of the whole
+      // collection (also re-checked in useExamSession.startDirectExam).
+      const examSnap = await getDocs(query(collection(db, 'exams'), where('id', '==', examId)));
+      const foundExam = examSnap.docs.map(d => d.data() as Exam)[0];
 
       if (currentUser.role === 'student' && currentUser.grade && foundExam) {
         if (foundExam.grade !== parseInt(currentUser.grade, 10)) {
@@ -439,22 +441,25 @@ export default function App() {
         }
       }
 
-      // 1. Fetch attempts computed today
-      const attemptCol = collection(db, 'attempts');
-      const snap = await getDocs(attemptCol);
-      const list = snap.docs.map(d => d.data() as Attempt);
-
+      // 1. Count only THIS user's attempts made today. Scoped server-side by
+      // userId (single-field equality: no composite index needed — important
+      // because the production Firestore is AI Studio-managed and we can't
+      // declare new composite indexes on it), then date-filtered client-side.
       const startOfToday = new Date();
-      startOfToday.setHours(0,0,0,0);
+      startOfToday.setHours(0, 0, 0, 0);
 
-      const todayAttempts = list.filter(att => {
-        const attDate = new Date(att.createdAt);
-        return att.userId === currentUser.id && attDate.getTime() >= startOfToday.getTime();
-      });
+      const mySnap = await getDocs(query(
+        collection(db, 'attempts'),
+        where('userId', '==', currentUser.id)
+      ));
+      const todayCount = mySnap.docs.filter(d => {
+        const att = d.data() as Attempt;
+        return new Date(att.createdAt).getTime() >= startOfToday.getTime();
+      }).length;
 
       // Guest Limits: max 1 per day
       if (currentUser.role === 'guest') {
-        if (todayAttempts.length >= 1) {
+        if (todayCount >= 1) {
           showCustomModal({
             type: 'warning',
             title: 'Hết lượt làm đề hôm nay',
@@ -467,7 +472,7 @@ export default function App() {
       // Expired Student Limits: max 3 per day
       const isExpired = new Date().getTime() > new Date(currentUser.expiresAt).getTime();
       if (currentUser.role === 'student' && isExpired) {
-        if (todayAttempts.length >= 3) {
+        if (todayCount >= 3) {
           showCustomModal({
             type: 'danger',
             title: 'Tài khoản Đã hết hạn học',
@@ -907,7 +912,7 @@ export default function App() {
                           required
                           value={usernameInput}
                           onChange={(e) => setUsernameInput(e.target.value)}
-                          placeholder="Ví dụ: phuclch, leanhthu2014, binhlc"
+                          placeholder="Nhập tên đăng nhập của bạn"
                           className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
                         />
                       </div>
@@ -1250,9 +1255,17 @@ export default function App() {
           </div>
         )}
 
-        {/* Content view workspace renderer */}
+        {/* Content view workspace renderer (views are lazy-loaded chunks) */}
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-          {renderActiveView()}
+          <Suspense
+            fallback={
+              <div className="flex h-[400px] items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent" />
+              </div>
+            }
+          >
+            {renderActiveView()}
+          </Suspense>
         </main>
 
       </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { BookOpen, Award, CheckCircle, AlertCircle, Bookmark, ArrowRight, ArrowLeft, Send, RefreshCw, AlertTriangle, Clock } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { BookOpen, Award, CheckCircle, AlertCircle, Bookmark, ArrowRight, ArrowLeft, Send, RefreshCw, AlertTriangle, Clock, Highlighter, Eraser } from 'lucide-react';
 import { ExamSession } from '../hooks/useExamSession';
 
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
@@ -61,15 +61,95 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
     feedbackText, setFeedbackText, reportingQNum, setReportingQNum,
     layoutMode, setLayoutMode, practiceFontSize, setPracticeFontSize,
     showAllPassages, setShowAllPassages, activeMobileTab, setActiveMobileTab,
-    timeRemaining, passageRefs,
+    timeRemaining, passageRefs, passageNotice,
     getActivePassageIdx, jumpToPassage, handleSelectOption, toggleMarked,
     submitExam, handleReportFeedback, handleRetake, quitExam,
   } = session;
 
+  // --- Reading tools (presentation-only state) ---
+  const passagesWrapRef = useRef<HTMLDivElement | null>(null);
+  const [highlightMode, setHighlightMode] = useState(false);
+  const [highlightCount, setHighlightCount] = useState(0);
+  const [readingFont, setReadingFont] = useState<'sans' | 'serif'>(() => {
+    try { return localStorage.getItem('exam_reading_font') === 'serif' ? 'serif' : 'sans'; } catch { return 'sans'; }
+  });
+
+  const toggleReadingFont = () => {
+    const next = readingFont === 'sans' ? 'serif' : 'sans';
+    setReadingFont(next);
+    try { localStorage.setItem('exam_reading_font', next); } catch { /* ignore */ }
+  };
+
+  // Wrap the selected text inside the passage pane with <mark> highlights.
+  // Works per intersected text node so selections spanning <b>/<i> fragments
+  // in the exam HTML are handled safely; the marks live outside React's
+  // reconciliation (dangerouslySetInnerHTML content is never re-diffed while
+  // the string stays identical), so they persist across question navigation.
+  const handlePassageMouseUp = () => {
+    if (!highlightMode || graded) return;
+    const container = passagesWrapRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (!container.contains(range.commonAncestorContainer)) return;
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const targets: Text[] = [];
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const probe = document.createRange();
+      probe.selectNodeContents(node);
+      const startsBeforeEnd = range.compareBoundaryPoints(Range.END_TO_START, probe) < 0;
+      const endsAfterStart = range.compareBoundaryPoints(Range.START_TO_END, probe) > 0;
+      if (startsBeforeEnd && endsAfterStart) targets.push(node as Text);
+    }
+
+    let added = 0;
+    targets.forEach(textNode => {
+      const r = document.createRange();
+      r.selectNodeContents(textNode);
+      if (textNode === range.startContainer) r.setStart(textNode, range.startOffset);
+      if (textNode === range.endContainer) r.setEnd(textNode, range.endOffset);
+      if (r.collapsed || !r.toString().trim()) return;
+      const mark = document.createElement('mark');
+      mark.dataset.hl = '1';
+      mark.style.backgroundColor = '#fde047';
+      mark.style.borderRadius = '2px';
+      mark.style.padding = '0 1px';
+      try { r.surroundContents(mark); added++; } catch { /* partial element selection — skip fragment */ }
+    });
+    sel.removeAllRanges();
+    if (added > 0) setHighlightCount(c => c + added);
+  };
+
+  const clearHighlights = () => {
+    const container = passagesWrapRef.current;
+    if (!container) return;
+    container.querySelectorAll('mark[data-hl]').forEach(m => {
+      const parent = m.parentNode;
+      while (m.firstChild) parent?.insertBefore(m.firstChild, m);
+      m.remove();
+    });
+    container.normalize();
+    setHighlightCount(0);
+  };
+
   if (!activeExam || !currentQuestion) return null;
+
+  const answeredCount = Object.keys(userAnswers).length;
+  const progressPct = questionsList.length > 0 ? Math.round((answeredCount / questionsList.length) * 100) : 0;
+  const lowTime = !graded && timeRemaining < 300; // under 5 minutes
 
   return (
     <div className="fixed inset-0 bg-slate-100 z-40 flex flex-col antialiased">
+
+      {/* Non-blocking reading notice (replaces the old interrupting modal) */}
+      {passageNotice && (
+        <div className="absolute top-14 md:top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200 pointer-events-none max-w-[90vw]">
+          <BookOpen className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+          <span className="truncate">{passageNotice}</span>
+        </div>
+      )}
 
       {scoreSummary && (
         <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
@@ -127,7 +207,13 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
       )}
 
       {/* Testing Header - Fixed */}
-      <div className="bg-slate-900 text-white px-4 py-1.5 md:py-2.5 flex flex-col md:flex-row gap-3 items-center justify-between border-b border-slate-800 shadow-md shrink-0">
+      <div className="relative bg-slate-900 text-white px-4 py-1.5 md:py-2.5 flex flex-col md:flex-row gap-3 items-center justify-between border-b border-slate-800 shadow-md shrink-0">
+        {/* Slim answered-progress bar pinned to the header's bottom edge */}
+        <div className="absolute bottom-0 left-0 h-[3px] bg-slate-800 w-full" />
+        <div
+          className="absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300"
+          style={{ width: `${progressPct}%` }}
+        />
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
           <button
             onClick={quitExam}
@@ -153,9 +239,12 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="bg-slate-800/80 px-2.5 md:px-3 py-1 rounded-xl text-center flex items-center gap-1.5 border border-slate-700">
-              <Clock className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="font-mono font-bold text-indigo-300 text-xs md:text-sm">{formatTimerDisplay(timeRemaining)}</span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg" title="Số câu đã trả lời">
+              ✓ <span className="text-emerald-400 font-mono">{answeredCount}</span>/<span className="font-mono">{questionsList.length}</span>
+            </span>
+            <div className={`px-2.5 md:px-3 py-1 rounded-xl text-center flex items-center gap-1.5 border ${lowTime ? 'bg-red-950/80 border-red-800' : 'bg-slate-800/80 border-slate-700'}`}>
+              <Clock className={`h-3.5 w-3.5 ${lowTime ? 'text-red-400' : 'text-indigo-400'}`} />
+              <span className={`font-mono font-bold text-xs md:text-sm ${lowTime ? 'text-red-300 animate-pulse' : 'text-indigo-300'}`}>{formatTimerDisplay(timeRemaining)}</span>
             </div>
 
             {!graded && (
@@ -185,27 +274,70 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
 
         {/* LEFT: Section Passage Reading Area */}
         <div className={`flex-1 md:w-1/2 p-3.5 md:p-4.5 overflow-y-auto border-r border-slate-200 min-h-0 ${activeMobileTab === 'passage' ? 'block' : 'hidden md:block'}`}>
-          <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-1.5 mb-3">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-indigo-600" />
               <span className="font-bold text-slate-900 text-xs uppercase tracking-wider">Đoạn văn đọc hiểu</span>
             </div>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-              <button type="button" onClick={() => setShowAllPassages(false)} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${!showAllPassages ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}>Đoạn liên quan</button>
-              <button type="button" onClick={() => setShowAllPassages(true)} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${showAllPassages ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}>Tất cả ({activeExam.passages.length})</button>
+
+            <div className="flex items-center gap-1.5">
+              {/* Reading tools: highlighter / clear / serif toggle */}
+              <button
+                type="button"
+                onClick={() => setHighlightMode(m => !m)}
+                title={highlightMode ? 'Tắt bút nhớ (đang bật: bôi đen chữ để đánh dấu)' : 'Bật bút nhớ: bôi đen chữ trong bài đọc để đánh dấu'}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${highlightMode ? 'bg-yellow-100 border-yellow-300 text-yellow-800 shadow-2xs' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800'}`}
+              >
+                <Highlighter className="h-3 w-3" /> Bút nhớ {highlightMode ? 'ON' : ''}
+              </button>
+              {highlightCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearHighlights}
+                  title="Xóa tất cả phần đã đánh dấu"
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border bg-slate-100 border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 transition-all cursor-pointer"
+                >
+                  <Eraser className="h-3 w-3" /> Xóa
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleReadingFont}
+                title="Đổi kiểu chữ bài đọc (Sans / Serif)"
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${readingFont === 'serif' ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-serif' : 'bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800'}`}
+              >
+                {readingFont === 'serif' ? 'Serif' : 'Aa'}
+              </button>
+
+              <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                <button type="button" onClick={() => setShowAllPassages(false)} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${!showAllPassages ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}>Đoạn liên quan</button>
+                <button type="button" onClick={() => setShowAllPassages(true)} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${showAllPassages ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-500 hover:text-slate-800'}`}>Tất cả ({activeExam.passages.length})</button>
+              </div>
             </div>
           </div>
 
-          <div className="prose max-w-none space-y-4">
+          {highlightMode && (
+            <p className="text-[10px] text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-2.5 py-1.5 mb-3 font-semibold">
+              🖍 Chế độ bút nhớ đang bật — bôi đen (quét chọn) đoạn chữ trong bài đọc để đánh dấu ghi nhớ.
+            </p>
+          )}
+
+          {/* Comfortable reading measure; DOM for every passage stays mounted
+              (hidden via CSS) so highlights survive question navigation. */}
+          <div
+            ref={passagesWrapRef}
+            onMouseUp={handlePassageMouseUp}
+            className={`prose max-w-[75ch] mx-auto space-y-4 ${highlightMode ? 'cursor-text select-text' : ''}`}
+          >
             {activeExam.passages.map((passage, pIdx) => {
               const isPassageActive = (passage.questions || []).some(q => q.questionNumber === currentQuestion.questionNumber);
-              if (!showAllPassages && !isPassageActive) return null;
+              const isHidden = !showAllPassages && !isPassageActive;
 
               return (
                 <div
                   key={pIdx}
                   ref={el => { passageRefs.current[pIdx] = el; }}
-                  className={`transition-all duration-300 p-3.5 md:p-4 rounded-xl ${isPassageActive ? 'bg-indigo-50/50 border border-indigo-200 shadow-xs ring-4 ring-indigo-500/5' : 'opacity-65'}`}
+                  className={`transition-all duration-300 p-3.5 md:p-4 rounded-xl ${isHidden ? 'hidden' : ''} ${isPassageActive ? 'bg-indigo-50/50 border border-indigo-200 shadow-xs ring-4 ring-indigo-500/5' : 'opacity-65'}`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase">
@@ -217,7 +349,10 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
                   </div>
 
                   <h3 className={getPassageTitleClass(practiceFontSize)}>{passage.title}</h3>
-                  <div className={getPassageContentClass(practiceFontSize)} dangerouslySetInnerHTML={{ __html: passage.content }} />
+                  <div
+                    className={`${getPassageContentClass(practiceFontSize)} ${readingFont === 'serif' ? 'font-serif' : ''}`}
+                    dangerouslySetInnerHTML={{ __html: passage.content }}
+                  />
                 </div>
               );
             })}
@@ -420,7 +555,10 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
                   <button onClick={() => setActiveQuestionIdx(Math.max(0, activeQuestionIdx - 1))} disabled={activeQuestionIdx === 0} className="flex items-center gap-1 text-slate-600 hover:text-slate-900 border border-slate-300 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 cursor-pointer">
                     <ArrowLeft className="h-3.5 w-3.5" /> Câu trước
                   </button>
-                  <div className="text-[10px] text-slate-400 font-medium font-mono">Mã đề: {activeExam.examCode}</div>
+                  <div className="text-[10px] text-slate-400 font-medium font-mono text-center">
+                    <span className="hidden lg:inline" title="Phím tắt bàn phím">⌨ ←/→ chuyển câu · A B C D chọn đáp án</span>
+                    <span className="lg:hidden">Mã đề: {activeExam.examCode}</span>
+                  </div>
                   <button onClick={() => setActiveQuestionIdx(Math.min(questionsList.length - 1, activeQuestionIdx + 1))} disabled={activeQuestionIdx === questionsList.length - 1} className="flex items-center gap-1 bg-slate-900 text-white hover:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 cursor-pointer">
                     Câu tiếp <ArrowRight className="h-3.5 w-3.5" />
                   </button>

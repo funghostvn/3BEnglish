@@ -11,6 +11,23 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      // Split heavy vendors into their own chunks so the initial student-facing
+      // payload stays small (firebase/motion are only pulled in when the chunks
+      // that use them — e.g. lazy-loaded admin/vocabulary views — are visited).
+      rollupOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (id.includes('node_modules')) {
+              if (id.includes('firebase') || id.includes('@firebase')) return 'firebase';
+              if (id.includes('motion') || id.includes('framer')) return 'motion';
+              if (id.includes('lucide-react')) return 'icons';
+              return 'vendor';
+            }
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

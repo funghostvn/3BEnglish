@@ -5,6 +5,7 @@ import { Attempt, User } from '../types';
 import { EXAM_CLASSIFICATIONS } from '../constants';
 import { useExamSession, ModalConfig } from '../hooks/useExamSession';
 import ExamRunner from './ExamRunner';
+import ResumeSessionBanner from './ResumeSessionBanner';
 import { BookOpen, ArrowRight } from 'lucide-react';
 
 interface PracticeViewProps {
@@ -29,6 +30,8 @@ export default function PracticeView({
 
   const [selectedClassificationFilter, setSelectedClassificationFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [doneFilter, setDoneFilter] = useState<'all' | 'done' | 'not_done'>('all');
   const [userAttempts, setUserAttempts] = useState<Attempt[]>([]);
 
   useEffect(() => {
@@ -61,15 +64,41 @@ export default function PracticeView({
     [exams, selectedClassificationFilter]
   );
 
+  // Years present in the current exam bank, newest first, for the year filter.
+  const availableYears = useMemo(() => {
+    const years: number[] = [];
+    exams.forEach(e => {
+      if (typeof e.year === 'number' && !years.includes(e.year)) years.push(e.year);
+    });
+    return years.sort((a, b) => b - a);
+  }, [exams]);
+
+  // Set of exam ids/codes the student has already attempted (drives the
+  // "đã làm / chưa làm" filter and the per-card stats below).
+  const attemptedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    userAttempts.forEach(a => {
+      if (a.examId) keys.add(a.examId);
+      if (a.examCode) keys.add(`code:${a.examCode}`);
+    });
+    return keys;
+  }, [userAttempts]);
+
   const filteredExams = useMemo(() => {
     const searchLower = searchQuery.toLowerCase().trim();
-    if (!searchLower) return classificationFilteredExams;
     return classificationFilteredExams.filter(e => {
+      if (yearFilter !== 'all' && String(e.year) !== yearFilter) return false;
+      if (doneFilter !== 'all') {
+        const isDone = attemptedKeys.has(e.id) || (e.examCode ? attemptedKeys.has(`code:${e.examCode}`) : false);
+        if (doneFilter === 'done' && !isDone) return false;
+        if (doneFilter === 'not_done' && isDone) return false;
+      }
+      if (!searchLower) return true;
       const titleMatch = e.title && e.title.toLowerCase().includes(searchLower);
       const codeMatch = e.examCode && e.examCode.toLowerCase().includes(searchLower);
       return titleMatch || codeMatch;
     });
-  }, [classificationFilteredExams, searchQuery]);
+  }, [classificationFilteredExams, searchQuery, yearFilter, doneFilter, attemptedKeys]);
 
   if (loading) {
     return (
@@ -85,6 +114,16 @@ export default function PracticeView({
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-200">
+      {/* Offer to restore an interrupted fixed-exam session (custom/SRS saves
+          are offered in CustomTrainingView instead) */}
+      {session.pendingResume && session.pendingResume.examCode !== 'RANDOM' && session.pendingResume.examCode !== 'SRS' && (
+        <ResumeSessionBanner
+          pending={session.pendingResume}
+          onResume={session.resumeSavedSession}
+          onDiscard={session.discardSavedSession}
+        />
+      )}
+
       <div className="bg-white rounded-3xl border border-slate-200/60 shadow-xs p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b pb-4">
           <div className="flex items-center gap-2">
@@ -113,17 +152,44 @@ export default function PracticeView({
           </div>
         </div>
 
-        <div className="mb-6 relative">
-          <input
-            type="text"
-            placeholder="Tìm kiếm đề thi bằng tiêu đề hoặc mã đề..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pl-11 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 transition-all font-sans"
-          />
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 absolute left-4 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+        <div className="mb-6 flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Tìm kiếm đề thi bằng tiêu đề hoặc mã đề..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pl-11 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 transition-all font-sans"
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 absolute left-4 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              title="Lọc theo năm phát hành đề"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="all">Mọi năm</option>
+              {availableYears.map(y => (
+                <option key={y} value={String(y)}>Năm {y}</option>
+              ))}
+            </select>
+
+            <select
+              value={doneFilter}
+              onChange={(e) => setDoneFilter(e.target.value as 'all' | 'done' | 'not_done')}
+              title="Lọc theo trạng thái luyện tập của bạn"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="not_done">Chưa làm lần nào</option>
+              <option value="done">Đã từng làm</option>
+            </select>
+          </div>
         </div>
 
         {exams.length === 0 ? (
