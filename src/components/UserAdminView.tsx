@@ -122,8 +122,11 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
       await updateDocById('users', activeUserToExtend.id, { expiresAt: extendedToIso });
 
       // 2. Commit log audit trail inside /extensions on Firestore
+      // No embedded `id` field here: addDoc() assigns the real doc id, and
+      // fetchCollection() always merges in the true Firestore doc id anyway
+      // — an embedded id here would just silently diverge from it (as
+      // happened historically with exam docs).
       const logPayload: Partial<ExtensionLog> = {
-        id: `ext_${Date.now()}`,
         userId: activeUserToExtend.id,
         username: activeUserToExtend.name,
         grade: activeUserToExtend.grade,
