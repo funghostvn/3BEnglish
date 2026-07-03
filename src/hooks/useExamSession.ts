@@ -603,12 +603,14 @@ export function useExamSession(
 
     setScoreSummary({ score: finalScore, correctCount, totalCount, timeSpent });
 
-    // Attempts/SRS updates from rage-quit-fast submits (under
-    // MIN_ATTEMPT_SECONDS_TO_SAVE) are skipped entirely (both the Attempt
-    // record and any SRS interval change) so the two stay consistent with
-    // each other instead of drifting (previously SRS was updated even when
-    // the attempt itself was silently dropped).
-    if (timeSpent < MIN_ATTEMPT_SECONDS_TO_SAVE) {
+    // Rage-quit-fast submits (under MIN_ATTEMPT_SECONDS_TO_SAVE) never get an
+    // Attempt record, so they're excluded from history and Dashboard scoring.
+    // This does NOT apply to SRS review sessions: those are often just a
+    // handful of due questions and can legitimately finish in well under the
+    // threshold, so SRS status must still transition even when the Attempt
+    // record itself is skipped.
+    const shouldLogAttempt = timeSpent >= MIN_ATTEMPT_SECONDS_TO_SAVE;
+    if (!shouldLogAttempt && !isSrsQuiz) {
       return;
     }
 
@@ -675,26 +677,28 @@ export function useExamSession(
         }
       });
 
-      const attemptRef = doc(collection(db, 'attempts'));
-      dbBatch.set(attemptRef, {
-        examId: activeExam.id,
-        examTitle: activeExam.title,
-        examCode: activeExam.examCode || "",
-        userId: currentUser ? currentUser.id : "guest",
-        username: currentUser ? currentUser.name : "Tài khoản Guest",
-        grade: activeExam.grade || 10,
-        correctCount,
-        totalCount,
-        score: finalScore,
-        timeSpent,
-        createdAt: new Date().toISOString(),
-        answers: userAnswers,
-        weakGrammar: Array.from(new Set(weakGrammar)),
-        weakVocab: Array.from(new Set(weakVocab)),
-        grammarPerf,
-        vocabPerf,
-        difficultyPerf
-      });
+      if (shouldLogAttempt) {
+        const attemptRef = doc(collection(db, 'attempts'));
+        dbBatch.set(attemptRef, {
+          examId: activeExam.id,
+          examTitle: activeExam.title,
+          examCode: activeExam.examCode || "",
+          userId: currentUser ? currentUser.id : "guest",
+          username: currentUser ? currentUser.name : "Tài khoản Guest",
+          grade: activeExam.grade || 10,
+          correctCount,
+          totalCount,
+          score: finalScore,
+          timeSpent,
+          createdAt: new Date().toISOString(),
+          answers: userAnswers,
+          weakGrammar: Array.from(new Set(weakGrammar)),
+          weakVocab: Array.from(new Set(weakVocab)),
+          grammarPerf,
+          vocabPerf,
+          difficultyPerf
+        });
+      }
 
       await dbBatch.commit();
       fetchSrsItems();
