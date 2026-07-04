@@ -23,7 +23,7 @@ Configured via `.env` (see `.env.example`), loaded by `dotenv` in `server.ts`:
 - `GITHUB_TOKEN` — required for the `/api/github/backup` and `/api/github/restore` endpoints.
 - `APP_URL` — injected by AI Studio at runtime, not used for local dev.
 
-Firebase project connection itself is **not** env-based — it's hardcoded in `firebase-applet-config.json` and imported directly by `src/firebase.ts`.
+Firebase project connection is resolved **at runtime**, not baked into the build or committed to git (`firebase-applet-config.json` is gitignored). `src/main.tsx` awaits `resolveFirebaseConfig()` (`src/services/runtimeFirebaseConfig.ts`) before ever importing `App.tsx`/`src/firebase.ts`, since the latter calls `initializeApp()` at module-evaluation time. Resolution order: (1) `GET /api/config/firebase` on the server, which itself prefers a local `firebase-applet-config.json` on disk (keeps the AI Studio-native flow working untouched) and otherwise falls back to `FIREBASE_*` env vars (see `.env.example`); (2) a value previously entered by the user via `DatabaseSetupView` and persisted in `localStorage`. If neither source has anything, `DatabaseSetupView` is shown instead of the app so an admin can type in their own Firebase project's connection details (validated with a live connectivity check before saving).
 
 ### CRITICAL: the live Firestore is AI Studio-managed, NOT the `firebase deploy` target
 

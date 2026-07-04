@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
@@ -8,6 +9,47 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+
+// Resolve the Firebase web config server-side instead of shipping a
+// committed JSON file: prefer the local (gitignored) firebase-applet-config.json
+// on disk if present — keeps the AI Studio-native flow working untouched —
+// otherwise fall back to individual FIREBASE_* env vars. Neither of these
+// values are secret in the traditional sense (Firebase web config is meant to
+// be public; real protection is Firestore Security Rules), this just stops
+// them from being committed to source control.
+function resolveFirebaseConfig(): Record<string, string> | null {
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), "firebase-applet-config.json"), "utf8");
+    return JSON.parse(raw);
+  } catch {
+    // file missing or unreadable — fall through to env vars
+  }
+
+  const apiKey = process.env.FIREBASE_API_KEY;
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  if (!apiKey || !projectId) return null;
+
+  return {
+    apiKey,
+    projectId,
+    appId: process.env.FIREBASE_APP_ID || "",
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+    firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || "(default)",
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "",
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID || "",
+  };
+}
+
+// Endpoint: expose the resolved Firebase config to the client at runtime, so
+// it never needs to be baked into the build or committed to the repo.
+app.get("/api/config/firebase", (req, res) => {
+  const config = resolveFirebaseConfig();
+  if (!config) {
+    return res.json({ configured: false });
+  }
+  return res.json({ configured: true, config });
+});
 
 // Body parser with large limit for PDF base64 payloads
 app.use(express.json({ limit: "50mb" }));
