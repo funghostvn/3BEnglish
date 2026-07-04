@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Exam, Passage, Question, QuestionFeedback, VOCABULARY_THEMES, GRAMMAR_THEMES, DIFFICULTY_LEVELS } from '../types';
 import { fetchCollection, updateDocById, updateExamById, deleteExamById } from '../services/firestore';
 import { EXAM_CLASSIFICATIONS, DEFAULT_EXAM_CLASSIFICATION } from '../constants';
+import { isTextInputQuestion } from '../utils/questionAnswer';
 import { 
   Trash2, 
   Edit3, 
@@ -913,38 +914,55 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                                 )}
                               </div>
 
-                              {/* Choices Options Grid */}
-                              <div className="md:col-span-2 p-4 bg-slate-50/50 rounded-2xl border border-dashed space-y-3">
-                                <span className="block text-indigo-700 text-[10px] uppercase font-extrabold tracking-wider mb-1">Danh sách lựa chọn đáp án:</span>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                                  {['A', 'B', 'C', 'D'].map(optKey => (
-                                    <div key={optKey}>
-                                      <label className="block text-slate-400 text-[9px] mb-0.5">Lựa chọn ({optKey}):</label>
-                                      <input
-                                        type="text"
-                                        value={q.options[optKey] || ''}
-                                        onChange={(e) => updateQuestionOptionInDetail(activePassageIdx, qIdx, optKey, e.target.value)}
-                                        className="w-full border px-3 py-2 rounded-xl font-normal bg-white text-xs focus:ring-1 focus:ring-indigo-500"
-                                        placeholder={`Đáp án ${optKey}`}
-                                      />
-                                    </div>
-                                  ))}
+                              {/* Choices Options Grid — hidden for free-text questions */}
+                              {!isTextInputQuestion(q) && (
+                                <div className="md:col-span-2 p-4 bg-slate-50/50 rounded-2xl border border-dashed space-y-3">
+                                  <span className="block text-indigo-700 text-[10px] uppercase font-extrabold tracking-wider mb-1">Danh sách lựa chọn đáp án:</span>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                    {['A', 'B', 'C', 'D'].map(optKey => (
+                                      <div key={optKey}>
+                                        <label className="block text-slate-400 text-[9px] mb-0.5">Lựa chọn ({optKey}):</label>
+                                        <input
+                                          type="text"
+                                          value={q.options[optKey] || ''}
+                                          onChange={(e) => updateQuestionOptionInDetail(activePassageIdx, qIdx, optKey, e.target.value)}
+                                          className="w-full border px-3 py-2 rounded-xl font-normal bg-white text-xs focus:ring-1 focus:ring-indigo-500"
+                                          placeholder={`Đáp án ${optKey}`}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
 
                               {/* Dropdowns */}
                               <div>
-                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Đáp án Đúng:</label>
-                                <select
-                                  value={q.correctAnswer || 'A'}
-                                  onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'correctAnswer', e.target.value)}
-                                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
-                                >
-                                  <option value="A">A</option>
-                                  <option value="B">B</option>
-                                  <option value="C">C</option>
-                                  <option value="D">D</option>
-                                </select>
+                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">
+                                  {isTextInputQuestion(q) ? 'Đáp án Đúng (tự luận):' : 'Đáp án Đúng:'}
+                                </label>
+                                {isTextInputQuestion(q) ? (
+                                  <>
+                                    <input
+                                      type="text"
+                                      value={q.correctAnswer || ''}
+                                      onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'correctAnswer', e.target.value)}
+                                      className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                                      placeholder="VD: was going | went"
+                                    />
+                                    <p className="text-[9px] text-slate-400 mt-1 font-medium normal-case">Câu tự luận (không có lựa chọn A-D). Nhiều đáp án chấp nhận được ngăn cách bằng dấu "|".</p>
+                                  </>
+                                ) : (
+                                  <select
+                                    value={q.correctAnswer || 'A'}
+                                    onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'correctAnswer', e.target.value)}
+                                    className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                                  >
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                  </select>
+                                )}
                               </div>
 
                               <div>

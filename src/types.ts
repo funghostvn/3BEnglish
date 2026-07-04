@@ -14,10 +14,14 @@ export interface User {
 export interface Question {
   questionNumber: number;
   text: string;
+  // 'multiple_choice' (default when absent) or 'text' — free-text questions
+  // carry an empty options map and store accepted answer variants in
+  // correctAnswer, separated by "|" (e.g. "was going | went").
+  answerType?: 'multiple_choice' | 'text';
   options: {
-    [key: string]: string; // A, B, C, D
+    [key: string]: string; // A, B, C, D — empty object for answerType 'text'
   };
-  correctAnswer: string; // A | B | C | D
+  correctAnswer: string; // A | B | C | D, or accepted text variants for answerType 'text'
   explanation: string;
   difficulty: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
   grammarCategory: string; // Verb tenses, Passive voice, etc.

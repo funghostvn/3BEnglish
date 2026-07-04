@@ -345,7 +345,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
       examName: "Đề thi tuyển sinh vào lớp 6 môn Tiếng Anh Cầu Giấy năm 2026",
       examCode: "CG-2026-PREVIEW",
       grade: 6,
-      numQuestions: 2,
+      numQuestions: 3,
       duration: 45,
       publisher: "Trường THCS Cầu Giấy",
       year: 2026,
@@ -382,6 +382,16 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
               explanation: "Câu mệnh lệnh 'Listen!' làm dấu hiệu nhận biết của thì Hiện tại tiếp diễn.",
               difficulty: "A1",
               grammarCategory: "Present continuous tense"
+            },
+            {
+              questionNumber: 3,
+              text: "Give the correct form of the verb: She ______ (go) to school by bike every day.",
+              answerType: "text",
+              options: {},
+              correctAnswer: "goes",
+              explanation: "Thì Hiện tại đơn với chủ ngữ ngôi thứ 3 số ít: thêm -es vào động từ 'go'. Câu tự luận: học sinh gõ đáp án, nhiều biến thể chấp nhận được ngăn cách bằng dấu '|'.",
+              difficulty: "A1",
+              grammarCategory: "Verb tenses"
             }
           ]
         }
@@ -1144,11 +1154,16 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
                             dangerouslySetInnerHTML={{ __html: q.text }}
                           />
 
-                          {/* Options */}
+                          {/* Options — or the accepted text answer(s) for free-text questions */}
+                          {(!q.options || Object.keys(q.options).length === 0 || q.answerType === 'text') ? (
+                            <div className="p-1.5 px-2.5 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800 font-bold">
+                              ✍️ Tự luận — Đáp án chấp nhận: {q.correctAnswer}
+                            </div>
+                          ) : (
                           <div className="grid grid-cols-2 gap-2 text-slate-600 font-medium">
-                            {q.options && Object.entries(q.options).map(([optKey, optVal]) => (
+                            {Object.entries(q.options).map(([optKey, optVal]) => (
                               <div key={optKey} className={`p-1.5 px-2.5 rounded-lg border ${
-                                q.correctAnswer === optKey 
+                                q.correctAnswer === optKey
                                   ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold'
                                   : 'bg-slate-50 border-slate-100'
                               }`}>
@@ -1156,6 +1171,7 @@ export default function ImportExamView({ onShowModal }: ImportExamViewProps) {
                               </div>
                             ))}
                           </div>
+                          )}
 
                           {q.explanation && (
                             <p className="p-2 bg-slate-50 text-slate-500 font-serif rounded-lg border border-slate-100 italic leading-relaxed text-[10px]^">

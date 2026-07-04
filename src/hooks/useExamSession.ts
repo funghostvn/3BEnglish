@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { fetchCollection } from '../services/firestore';
 import { Exam, Passage, Question, Attempt, QuestionFeedback, SRSItem, User, CategoryPerf } from '../types';
 import { MIN_ATTEMPT_SECONDS_TO_SAVE } from '../constants';
+import { isAnswerCorrect } from '../utils/questionAnswer';
 
 export type ModalConfig = {
   type: 'success' | 'warning' | 'danger' | 'info' | 'confirm';
@@ -535,7 +536,17 @@ export function useExamSession(
 
   const handleSelectOption = (qNum: number, choice: string) => {
     if (graded) return;
-    setUserAnswers(prev => ({ ...prev, [qNum]: choice }));
+    setUserAnswers(prev => {
+      // Free-text questions call this on every keystroke: an emptied input
+      // means "no answer", so drop the key to keep the answered-count honest.
+      if (choice.trim() === '') {
+        if (!(qNum in prev)) return prev;
+        const next = { ...prev };
+        delete next[qNum];
+        return next;
+      }
+      return { ...prev, [qNum]: choice };
+    });
   };
 
   const toggleMarked = (qNum: number) => {
@@ -580,7 +591,7 @@ export function useExamSession(
 
     questionsList.forEach(q => {
       const ans = userAnswers[q.questionNumber];
-      const isCorrect = ans === q.correctAnswer;
+      const isCorrect = isAnswerCorrect(q, ans);
       const parentPassage = (activeExam.passages || []).find(p => (p.questions || []).some(qy => qy.questionNumber === q.questionNumber));
 
       if (q.grammarCategory) bumpPerf(grammarPerf, q.grammarCategory, isCorrect);
@@ -624,7 +635,7 @@ export function useExamSession(
 
         const srsItem = srsItems.find(item => item.examId === origExamId && item.questionNumber === origQNumber);
         const ans = userAnswers[q.questionNumber];
-        const isCorrect = ans === q.correctAnswer;
+        const isCorrect = isAnswerCorrect(q, ans);
 
         if (!isCorrect && ans !== undefined) {
           const nextDate = new Date();

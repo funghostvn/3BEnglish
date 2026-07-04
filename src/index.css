@@ -6,3 +6,236 @@
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "Fira Code", monospace;
 }
+
+@variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   DESIGN TOKENS — CSS Custom Properties
+   ============================================================ */
+:root {
+  /* Brand palette */
+  --brand-50:  #eef2ff;
+  --brand-100: #e0e7ff;
+  --brand-300: #a5b4fc;
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+  --brand-900: #312e81;
+
+  /* Score colours */
+  --score-great:   #10b981; /* emerald-500 */
+  --score-ok:      #f59e0b; /* amber-500   */
+  --score-poor:    #f43f5e; /* rose-500    */
+
+  /* Surface / background tokens */
+  --surface-bg:      #f8fafc; /* slate-50  */
+  --surface-card:    #ffffff;
+  --surface-muted:   #f1f5f9; /* slate-100 */
+  --surface-border:  #e2e8f0; /* slate-200 */
+
+  /* Text tokens */
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+
+  /* Chart */
+  --chart-line:     #6366f1;
+  --chart-fill-top: rgba(99,102,241,0.30);
+  --chart-fill-bot: rgba(99,102,241,0.00);
+  --chart-grid:     #e2e8f0;
+  --chart-avg:      rgba(99,102,241,0.50);
+}
+
+/* Dark mode token overrides */
+.dark {
+  --surface-bg:      #020617; /* slate-950 */
+  --surface-card:    #0f172a; /* slate-900 */
+  --surface-muted:   #1e293b; /* slate-800 */
+  --surface-border:  #1e293b;
+
+  --text-primary:   #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:     #475569;
+
+  --chart-line:     #818cf8; /* indigo-400 */
+  --chart-fill-top: rgba(129,140,248,0.25);
+  --chart-fill-bot: rgba(129,140,248,0.00);
+  --chart-grid:     rgba(255,255,255,0.07);
+  --chart-avg:      rgba(129,140,248,0.45);
+}
+
+/* ============================================================
+   KEYFRAME ANIMATIONS
+   ============================================================ */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+  50%       { box-shadow: 0 0 0 8px rgba(99,102,241,0.15); }
+}
+
+@keyframes blobDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, -20px) scale(1.05); }
+  66%       { transform: translate(-20px, 15px) scale(0.97); }
+}
+
+@keyframes blobDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-25px, 20px) scale(1.04); }
+  66%       { transform: translate(20px, -15px) scale(0.96); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { r: 4; opacity: 1; }
+  50%       { r: 6; opacity: 0.7; }
+}
+
+@keyframes chartLineGrow {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes numberRoll {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+@keyframes spinnerFade {
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 1; }
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ============================================================
+   ANIMATION UTILITY CLASSES
+   ============================================================ */
+.anim-fade-slide-up {
+  animation: fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+.anim-fade-slide-in {
+  animation: fadeSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both;
+}
+.anim-scale-in {
+  animation: scaleIn 0.35s cubic-bezier(0.16,1,0.3,1) both;
+}
+.anim-blob-drift  { animation: blobDrift  12s ease-in-out infinite; }
+.anim-blob-drift2 { animation: blobDrift2 15s ease-in-out infinite; }
+.anim-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* Stagger helpers */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+
+/* ============================================================
+   CUSTOM SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ============================================================
+   PREMIUM GLASS / CARD UTILITIES
+   ============================================================ */
+.glass {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.dark .glass {
+  background: rgba(15,23,42,0.70);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Shimmer loading skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-muted) 25%,
+    rgba(255,255,255,0.5) 50%,
+    var(--surface-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 25%,
+    rgba(255,255,255,0.04) 50%,
+    #1e293b 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Input focus glow */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
+}
+.dark input:focus, .dark select:focus, .dark textarea:focus {
+  box-shadow: 0 0 0 3px rgba(129,140,248,0.20);
+}
+
+/* Smooth transitions for theme switch */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4,0,0.2,1);
+}
+/* But don't block transform/opacity transitions */
+button, a, [role="button"] {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4,0,0.2,1);
+}

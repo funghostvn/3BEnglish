@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { BookOpen, Award, CheckCircle, AlertCircle, Bookmark, ArrowRight, ArrowLeft, Send, RefreshCw, AlertTriangle, Clock, Highlighter, Eraser } from 'lucide-react';
+import { BookOpen, Award, CheckCircle, AlertCircle, Bookmark, ArrowRight, ArrowLeft, Send, RefreshCw, AlertTriangle, Clock, Highlighter, Eraser, PenLine } from 'lucide-react';
 import { ExamSession } from '../hooks/useExamSession';
+import { Question } from '../types';
+import { isTextInputQuestion, isAnswerCorrect, formatCorrectAnswerDisplay } from '../utils/questionAnswer';
 
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -48,6 +50,50 @@ function formatTimerDisplay(seconds: number) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Free-text answer box used in place of the A-D option grid for questions
+// without MCQ options (answerType 'text').
+function TextAnswerInput({ q, value, graded, fontSize, onChange }: {
+  q: Question;
+  value: string | undefined;
+  graded: boolean;
+  fontSize: FontSize;
+  onChange: (val: string) => void;
+}) {
+  const correct = graded ? isAnswerCorrect(q, value) : false;
+
+  let boxColor = 'border-slate-300 bg-white focus-within:border-indigo-500';
+  if (graded) {
+    boxColor = correct ? 'border-green-500 bg-green-50' : 'border-red-400 bg-red-50';
+  }
+
+  return (
+    <div className="pt-2 space-y-2">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-700">
+        <PenLine className="h-3.5 w-3.5" /> Câu tự luận — gõ đáp án của bạn vào ô dưới:
+      </p>
+      <div className={`rounded-lg border-2 transition-colors ${boxColor}`}>
+        <input
+          type="text"
+          value={value || ''}
+          disabled={graded}
+          onChange={e => onChange(e.target.value)}
+          placeholder="Nhập đáp án tại đây..."
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          className={`w-full bg-transparent px-3 py-2.5 outline-hidden font-semibold ${getOptionTextClass(fontSize)} ${graded ? (correct ? 'text-green-800' : 'text-red-800') : 'text-slate-800'}`}
+        />
+      </div>
+      {!graded && (
+        <p className="text-[10px] text-slate-400 font-medium">
+          Không phân biệt chữ hoa/thường; khoảng trắng thừa và dấu chấm câu cuối được tự động bỏ qua khi chấm.
+        </p>
+      )}
+    </div>
+  );
 }
 
 // Full-screen quiz-taking UI shared by PracticeView and CustomTrainingView.
@@ -397,6 +443,15 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
 
                     <h4 className={getQuestionTextClass(practiceFontSize)} dangerouslySetInnerHTML={{ __html: q.text }} />
 
+                    {isTextInputQuestion(q) ? (
+                      <TextAnswerInput
+                        q={q}
+                        value={userAnswers[q.questionNumber]}
+                        graded={graded}
+                        fontSize={practiceFontSize}
+                        onChange={val => handleSelectOption(q.questionNumber, val)}
+                      />
+                    ) : (
                     <div className="grid grid-cols-1 gap-2.5 pt-1.5">
                       {Object.entries(q.options).sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => {
                         const isSelected = userAnswers[q.questionNumber] === key;
@@ -420,18 +475,19 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
                         );
                       })}
                     </div>
+                    )}
 
                     {graded && (
                       <div className="border-t border-slate-100 pt-3 space-y-2.5 mt-2">
-                        <div className={`p-3.5 rounded-xl flex gap-2.5 text-xs ${userAnswers[q.questionNumber] === q.correctAnswer ? 'bg-green-50/80 border border-green-200/50 text-green-900' : 'bg-red-50/80 border border-red-200/50 text-red-900'}`}>
-                          {userAnswers[q.questionNumber] === q.correctAnswer ? (
+                        <div className={`p-3.5 rounded-xl flex gap-2.5 text-xs ${isAnswerCorrect(q, userAnswers[q.questionNumber]) ? 'bg-green-50/80 border border-green-200/50 text-green-900' : 'bg-red-50/80 border border-red-200/50 text-red-900'}`}>
+                          {isAnswerCorrect(q, userAnswers[q.questionNumber]) ? (
                             <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
                           ) : (
                             <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
                           )}
                           <div>
                             <p className="font-bold">
-                              {userAnswers[q.questionNumber] === q.correctAnswer ? 'Chính xác! 🎉' : `Đáp án đúng phải là: ${q.correctAnswer}`}
+                              {isAnswerCorrect(q, userAnswers[q.questionNumber]) ? 'Chính xác! 🎉' : `Đáp án đúng phải là: ${formatCorrectAnswerDisplay(q)}`}
                             </p>
                             {q.explanation && (
                               <p className="text-slate-600 text-[11px] leading-relaxed mt-1 whitespace-pre-line"><b>Giải thích:</b> {q.explanation}</p>
@@ -485,6 +541,15 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
 
                   <h4 className={getQuestionTextClass(practiceFontSize)} dangerouslySetInnerHTML={{ __html: currentQuestion.text }} />
 
+                  {isTextInputQuestion(currentQuestion) ? (
+                    <TextAnswerInput
+                      q={currentQuestion}
+                      value={userAnswers[currentQuestion.questionNumber]}
+                      graded={graded}
+                      fontSize={practiceFontSize}
+                      onChange={val => handleSelectOption(currentQuestion.questionNumber, val)}
+                    />
+                  ) : (
                   <div className="grid grid-cols-1 gap-2.5 pt-2">
                     {Object.entries(currentQuestion.options).sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => {
                       const isSelected = userAnswers[currentQuestion.questionNumber] === key;
@@ -514,19 +579,20 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
                       );
                     })}
                   </div>
+                  )}
                 </div>
 
                 {graded && (
                   <div className="border-t border-slate-100 pt-6 mt-6 space-y-4">
-                    <div className={`p-4 rounded-2xl flex gap-3 ${userAnswers[currentQuestion.questionNumber] === currentQuestion.correctAnswer ? 'bg-green-50/80 border border-green-200/50 text-green-900' : 'bg-red-50/80 border border-red-200/50 text-red-900'}`}>
-                      {userAnswers[currentQuestion.questionNumber] === currentQuestion.correctAnswer ? (
+                    <div className={`p-4 rounded-2xl flex gap-3 ${isAnswerCorrect(currentQuestion, userAnswers[currentQuestion.questionNumber]) ? 'bg-green-50/80 border border-green-200/50 text-green-900' : 'bg-red-50/80 border border-red-200/50 text-red-900'}`}>
+                      {isAnswerCorrect(currentQuestion, userAnswers[currentQuestion.questionNumber]) ? (
                         <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
                       ) : (
                         <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
                       )}
                       <div>
                         <p className="font-bold text-sm">
-                          {userAnswers[currentQuestion.questionNumber] === currentQuestion.correctAnswer ? 'Đúng rồi! Tuyệt vời 👏' : `Chưa đúng! Đáp án đúng của bạn phải là ${currentQuestion.correctAnswer}`}
+                          {isAnswerCorrect(currentQuestion, userAnswers[currentQuestion.questionNumber]) ? 'Đúng rồi! Tuyệt vời 👏' : `Chưa đúng! Đáp án đúng của bạn phải là ${formatCorrectAnswerDisplay(currentQuestion)}`}
                         </p>
                         {currentQuestion.explanation && (
                           <p className="text-slate-600 text-xs leading-relaxed mt-1 whitespace-pre-line"><b>Giải thích:</b> {currentQuestion.explanation}</p>
@@ -583,7 +649,7 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
                 if (isActive) bgBtn = 'bg-indigo-600 text-white border-indigo-700 font-bold shadow-xs scale-105';
 
                 if (graded) {
-                  const isRight = userAnswers[q.questionNumber] === q.correctAnswer;
+                  const isRight = isAnswerCorrect(q, userAnswers[q.questionNumber]);
                   if (isRight) bgBtn = 'bg-green-100 text-green-800 border-green-300 font-bold';
                   else if (isAns) bgBtn = 'bg-red-100 text-red-800 border-red-300 font-bold';
                   else bgBtn = 'bg-slate-100 text-slate-400 border-slate-200';
