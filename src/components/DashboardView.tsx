@@ -77,11 +77,7 @@ export default function DashboardView({
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      let effectiveGradeFilter = currentGradeFilter;
-      if (currentUser && currentUser.role === 'student' && currentUser.grade) {
-        effectiveGradeFilter = currentUser.grade;
-      }
-      const parsedGradeFilter = effectiveGradeFilter === 'all' ? null : parseInt(effectiveGradeFilter, 10);
+      const parsedGradeFilter = currentGradeFilter === 'all' ? null : parseInt(currentGradeFilter, 10);
       const hasValidGradeFilter = parsedGradeFilter !== null && !isNaN(parsedGradeFilter);
 
       const examList = await fetchCollection<Exam>('exams');
@@ -108,7 +104,12 @@ export default function DashboardView({
         }
       });
 
+      // Grade filter only scopes the admin's own aggregate view (grade tabs);
+      // a student/guest's personal history always shows every attempt they
+      // made, regardless of which grade's exam it was on — otherwise it can
+      // silently diverge from the leaderboard's unfiltered per-user count.
       const filteredAttempts = personalAttempts.filter(att => {
+        if (currentUser?.role !== 'admin') return true;
         if (!hasValidGradeFilter) return true;
         return att.grade === parsedGradeFilter;
       });
@@ -404,9 +405,9 @@ export default function DashboardView({
       )}
 
       {/* ===== HÀNG 1: Profile mở rộng (3 cột) + Diamond (1 cột) ===== */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
         {/* Profile Card - chiếm 3 cột */}
-        <div className="col-span-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 rounded-2xl text-white relative overflow-hidden shadow-lg">
+        <div className="md:col-span-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 rounded-2xl text-white relative overflow-hidden shadow-lg">
           <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl -z-0" />
           <div className="absolute left-1/3 bottom-0 w-40 h-40 bg-violet-500/10 rounded-full blur-2xl -z-0" />
           
@@ -469,7 +470,7 @@ export default function DashboardView({
 
         {/* Diamond Card - chiếm 1 cột */}
         {currentUser?.role === 'student' ? (
-          <div className="col-span-1 bg-gradient-to-br from-cyan-500 via-indigo-600 to-indigo-700 p-5 rounded-2xl text-white shadow-lg flex flex-col justify-between">
+          <div className="md:col-span-1 bg-gradient-to-br from-cyan-500 via-indigo-600 to-indigo-700 p-5 rounded-2xl text-white shadow-lg flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <span className="p-2 bg-white/20 rounded-xl">
@@ -488,7 +489,7 @@ export default function DashboardView({
             </button>
           </div>
         ) : (
-          <div className="col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl text-white shadow-lg flex flex-col justify-center items-center text-center">
+          <div className="md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl text-white shadow-lg flex flex-col justify-center items-center text-center">
             <Gem size={28} className="text-white/60 mb-2" />
             <p className="text-xs font-bold">Đăng ký tài khoản</p>
             <p className="text-[10px] text-white/70">để nhận kim cương</p>
@@ -497,7 +498,7 @@ export default function DashboardView({
       </div>
 
       {/* ===== HÀNG 2: Thống kê ngân hàng câu hỏi (4 cột) ===== */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {/* Tổng đề */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/20">
           <div className="flex items-center gap-3">
@@ -509,7 +510,7 @@ export default function DashboardView({
               <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalExamsCount}</p>
             </div>
           </div>
-          <div className="mt-2 flex gap-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
             <span className="bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">Lớp 6: {examsByGrade[6] || 0}</span>
             <span className="bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">Lớp 10: {examsByGrade[10] || 0}</span>
             <span className="bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">Lớp 12: {examsByGrade[12] || 0}</span>
@@ -531,7 +532,7 @@ export default function DashboardView({
         </div>
 
         {/* Phân bổ CEFR - chiếm 2 cột */}
-        <div className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20">
+        <div className="sm:col-span-2 md:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20">
           <div className="flex items-center gap-3 mb-2">
             <span className="p-2.5 bg-purple-100 dark:bg-purple-900/40 rounded-xl text-purple-600 dark:text-purple-400">
               <Layers size={20} />
@@ -560,9 +561,9 @@ export default function DashboardView({
       </div>
 
       {/* ===== HÀNG 3: CEFR + Weak Areas (2 cột + 2 cột) ===== */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
         {/* CEFR Progress - 2 cột */}
-        <div className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
           <h4 className="font-bold flex items-center gap-2 text-sm text-slate-900 dark:text-white">
             <TrendingUp size={18} className="text-indigo-600" />
             Trình độ CEFR ước tính
@@ -618,7 +619,7 @@ export default function DashboardView({
         </div>
 
         {/* Weak Areas - 2 cột */}
-        <div className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
               <Target size={18} className="text-indigo-600" />
@@ -688,8 +689,8 @@ export default function DashboardView({
       </div>
 
       {/* ===== HÀNG 4: Trend + Classification (2 cột + 2 cột) ===== */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
-        <div className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-slate-900 dark:text-white font-bold text-sm flex items-center gap-2">
               <TrendingUp size={18} className="text-indigo-600" />
@@ -708,7 +709,7 @@ export default function DashboardView({
           )}
         </div>
 
-        <div className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5">
           <h4 className="text-slate-900 dark:text-white font-bold text-sm flex items-center gap-2 mb-3">
             <Layers size={18} className="text-indigo-600" />
             Điểm theo loại đề
