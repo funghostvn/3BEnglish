@@ -772,45 +772,45 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
   }, [filteredLookupList, currentPage]);
 
   const renderCefrStatsCard = (classNameAdd: string = '') => (
-    <div className={`bg-white p-5 rounded-2xl border border-slate-200/80 shadow-3xs space-y-3 ${classNameAdd}`}>
-      <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+    <div className={`bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs space-y-3 ${classNameAdd}`}>
+      <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+        <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-indigo-500" /> Thống kê từ vựng CEFR
         </h3>
       </div>
 
       <div className="space-y-2.5">
         {cefrStats.map((stat) => {
-          const percentage = mergedVocabulary.length > 0 
-            ? Math.round((stat.totalCount / mergedVocabulary.length) * 100) 
+          const percentage = mergedVocabulary.length > 0
+            ? Math.round((stat.totalCount / mergedVocabulary.length) * 100)
             : 0;
 
           return (
-            <div 
+            <div
               key={stat.level}
               onClick={() => setSelectedLevel(stat.level)}
               className={`p-2 rounded-xl border transition-all cursor-pointer group select-none ${
                 selectedLevel === stat.level
-                  ? 'bg-indigo-50/40 border-indigo-250 shadow-3xs scale-101'
-                  : 'border-slate-100/70 hover:bg-slate-50/70 hover:border-slate-200'
+                  ? 'bg-indigo-50/40 dark:bg-indigo-950/30 border-indigo-250 dark:border-indigo-900/40 shadow-3xs scale-101'
+                  : 'border-slate-100/70 dark:border-slate-800 hover:bg-slate-50/70 dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-wide ${
-                    stat.level.startsWith('A') 
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                    stat.level.startsWith('A')
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40'
                       : stat.level.startsWith('B')
-                      ? 'bg-sky-50 text-sky-700 border border-sky-100'
-                      : 'bg-purple-50 text-purple-705 border border-purple-100'
+                      ? 'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-900/40'
+                      : 'bg-purple-50 dark:bg-purple-950/30 text-purple-705 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40'
                   }`}>
                     {stat.level}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-650 transition-colors">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 group-hover:text-indigo-650 transition-colors">
                     {stat.level === 'A1' ? 'Cơ bản' : stat.level === 'A2' ? 'Sơ cấp' : stat.level === 'B1' ? 'Trung cấp' : stat.level === 'B2' ? 'Trung cao cấp' : stat.level === 'C1' ? 'Cao cấp' : 'Thành thạo'}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-700">
+                <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-700 dark:text-slate-300">
                   <span>{stat.totalCount} từ</span>
                   {stat.savedCount > 0 && (
                     <span className="flex items-center text-rose-500" title={`Đã lưu ${stat.savedCount} từ`}>
@@ -822,8 +822,8 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
               </div>
 
               {/* Bar indicator */}
-              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                <div 
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     selectedLevel === stat.level
                       ? 'bg-indigo-600'
@@ -838,7 +838,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
               </div>
 
               {/* Detail row */}
-              <div className="flex justify-between items-center mt-1 text-[9px] text-slate-400 font-bold px-0.5">
+              <div className="flex justify-between items-center mt-1 text-[9px] text-slate-400 dark:text-slate-500 font-bold px-0.5">
                 <span>Tỷ lệ: {percentage}% lý thuyết</span>
                 <span>Mặc định: {stat.staticCount} | Nhập thêm: {stat.importedCount}</span>
               </div>
@@ -846,7 +846,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           );
         })}
 
-        <div className="text-[9.5px] text-slate-400 font-bold pt-1.5 border-t border-slate-100 flex justify-between items-center px-1">
+        <div className="text-[9.5px] text-slate-400 dark:text-slate-500 font-bold pt-1.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center px-1">
           <span>Tổng cộng: {mergedVocabulary.length} từ</span>
           <span>Đã học/lưu: {personalList.length} từ</span>
         </div>
@@ -858,27 +858,27 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
     <div className="space-y-6">
       
       {/* Upper header section */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-3xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+            <span className="p-1.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
               <Library className="h-5 w-5" />
             </span>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Học Từ Vựng & Flashcards</h2>
+            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">Học Từ Vựng & Flashcards</h2>
           </div>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             Tra cứu từ điển học thuật {mergedVocabulary.length} mục chính thức cho kỳ thi lớp 6, 10, và 12. Phát triển vốn từ và rèn luyện trí nhớ qua thẻ thông minh.
           </p>
         </div>
 
         {/* Tab switch for Lookup / Practice / Import */}
-        <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 border border-slate-200/30">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 border border-slate-200/30 dark:border-slate-700/30">
           <button
             onClick={() => setActiveSubTab('lookup')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               activeSubTab === 'lookup'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Search className="h-3.5 w-3.5" /> Tra cứu từ vựng
@@ -887,8 +887,8 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
             onClick={() => setActiveSubTab('practice')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
               activeSubTab === 'practice'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <BookOpen className="h-3.5 w-3.5" /> Luyện tập Flashcards
@@ -904,11 +904,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
               }}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 activeSubTab === 'import'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Upload className="h-3.5 w-3.5 text-indigo-600" /> Nhập từ vựng (.txt) 📥
+              <Upload className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" /> Nhập từ vựng (.txt) 📥
             </button>
           )}
         </div>
@@ -920,25 +920,25 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           
           {/* SEARCH FILTERS AND STATISTICS (LEFT COLUMN) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-3xs space-y-4">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Bộ lọc từ điển</h3>
-              
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest">Bộ lọc từ điển</h3>
+
               {/* Keywords Finder */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tìm từ</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Tìm từ</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="E.g. computer, brave, climate..."
-                    className="w-full text-xs p-3 pl-9 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-semibold"
+                    className="w-full text-xs p-3 pl-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white font-semibold placeholder-slate-400 dark:placeholder:text-slate-500"
                   />
-                  <Search className="absolute left-3 top-3.5 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-3 top-3.5 h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                   {searchQuery && (
-                    <button 
+                    <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-3.5 text-[10px] text-slate-400 font-bold hover:text-slate-700"
+                      className="absolute right-3 top-3.5 text-[10px] text-slate-400 dark:text-slate-500 font-bold hover:text-slate-700 dark:hover:text-slate-200"
                     >
                       Xóa
                     </button>
@@ -948,7 +948,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
               {/* CEFR Level filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Trình độ CEFR</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Trình độ CEFR</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
                     <button
@@ -957,7 +957,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                       className={`py-2 px-1 text-center rounded-lg text-xs font-bold cursor-pointer transition-all border ${
                         selectedLevel === lvl
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       {lvl === 'all' ? 'Tất cả' : lvl}
@@ -968,11 +968,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
               {/* Topic Select filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Chủ đề từ vựng</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Chủ đề từ vựng</label>
                 <select
                   value={selectedTopic}
                   onChange={(e) => setSelectedTopic(e.target.value)}
-                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden text-slate-700 font-semibold cursor-pointer"
+                  className="w-full text-xs p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden text-slate-700 dark:text-white font-semibold cursor-pointer"
                 >
                   <option value="all">Tất cả chủ đề</option>
                   {mergedTopics.map((topic) => (
@@ -989,7 +989,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                     setSelectedTopic('all');
                     setSearchQuery('');
                   }}
-                  className="w-full text-xs font-bold text-indigo-600 hover:text-indigo-800 pt-2 text-center block"
+                  className="w-full text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 pt-2 text-center block"
                 >
                   Thiết lập lại bộ lọc
                 </button>
@@ -1018,10 +1018,10 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           {/* RESULTS DIRECTORY LISTING (RIGHT COLUMN) */}
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-400 font-bold">
-                Tìm thấy <span className="text-slate-700">{filteredLookupList.length}</span> mục từ vựng thích hợp
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">
+                Tìm thấy <span className="text-slate-700 dark:text-slate-300">{filteredLookupList.length}</span> mục từ vựng thích hợp
               </p>
-              
+
               {personalList.length > 0 && (
                 <button
                   onClick={() => {
@@ -1035,7 +1035,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                       message: `Bạn đang có ${personalList.length} từ đã lưu. Bạn có thể lựa chọn thẻ "Luyện tập Flashcards" và đặt Nguồn học là "Sổ tay cá nhân" để ghi nhớ.`
                     });
                   }}
-                  className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" /> Sổ tay của tôi ({personalList.length})
                 </button>
@@ -1043,10 +1043,10 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
             </div>
 
             {filteredLookupList.length === 0 ? (
-              <div className="bg-white p-12 text-center rounded-2xl border border-dashed border-slate-300 text-slate-500">
-                <AlertCircle className="h-8 w-8 text-slate-301 mx-auto mb-2" />
+              <div className="bg-white dark:bg-slate-900 p-12 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                <AlertCircle className="h-8 w-8 text-slate-301 dark:text-slate-600 mx-auto mb-2" />
                 <p className="text-sm font-semibold">Không tìm thấy từ vựng nào phù hợp.</p>
-                <p className="text-xs text-slate-400">Hãy thử gõ từ khóa khác hoặc thay đổi bộ lọc cấp độ/chủ đề.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Hãy thử gõ từ khóa khác hoặc thay đổi bộ lọc cấp độ/chủ đề.</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -1059,22 +1059,22 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, delay: Math.min(index * 0.02, 0.2) }}
-                        className="bg-white p-4.5 rounded-2xl border border-slate-200/80 shadow-3xs hover:border-indigo-200 hover:shadow-2xs transition-all flex flex-col justify-between"
+                        className="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs hover:border-indigo-200 dark:hover:border-indigo-900/40 hover:shadow-2xs transition-all flex flex-col justify-between"
                       >
                         <div className="space-y-2.5">
                           <div className="flex items-center justify-between">
                             {/* Level Badge */}
                             <div className="flex items-center gap-2">
                               <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                                item.level === 'A1' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                item.level === 'A2' ? 'bg-teal-50 text-teal-700 border border-teal-100' :
-                                item.level === 'B1' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
-                                item.level === 'B2' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
-                                'bg-purple-50 text-purple-700 border border-purple-100'
+                                item.level === 'A1' ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40' :
+                                item.level === 'A2' ? 'bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40' :
+                                item.level === 'B1' ? 'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-900/40' :
+                                item.level === 'B2' ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40' :
+                                'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40'
                               }`}>
                                 CEFR {item.level}
                               </span>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide truncate max-w-[130px]" title={item.topic}>
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide truncate max-w-[130px]" title={item.topic}>
                                 {item.topic}
                               </span>
                             </div>
@@ -1082,25 +1082,25 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                             {/* Star Toggle Button */}
                             <button
                               onClick={() => handleToggleBookmark(item)}
-                              className="p-1.5 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+                              className="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors"
                               title={isSaved ? "Bỏ lưu từ" : "Lưu vào tủ cá nhân"}
                             >
-                              <Star className={`h-4.5 w-4.5 ${isSaved ? 'text-rose-500 fill-rose-500' : 'text-slate-300'}`} />
+                              <Star className={`h-4.5 w-4.5 ${isSaved ? 'text-rose-500 fill-rose-500' : 'text-slate-300 dark:text-slate-600'}`} />
                             </button>
                           </div>
 
                           {/* Word, Pronunciation Speaker */}
                           <div>
                             <div className="flex items-baseline gap-2">
-                              <h4 className="text-base font-extrabold text-slate-900 font-sans tracking-tight">{item.word}</h4>
-                              <span className="text-xs font-bold text-indigo-600 font-mono">{item.type}</span>
+                              <h4 className="text-base font-extrabold text-slate-900 dark:text-white font-sans tracking-tight">{item.word}</h4>
+                              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">{item.type}</span>
                             </div>
-                            
+
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-xs text-slate-400 font-mono font-medium">{item.pronunciation}</span>
+                              <span className="text-xs text-slate-400 dark:text-slate-500 font-mono font-medium">{item.pronunciation}</span>
                               <button
                                 onClick={() => handleSpeak(item.word)}
-                                className="p-1 hover:bg-indigo-50 text-indigo-500 rounded-sm cursor-pointer transition-colors"
+                                className="p-1 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 rounded-sm cursor-pointer transition-colors"
                                 title="Nghe phát âm chuẩn chuẩn"
                               >
                                 <Volume2 className="h-3 w-3" />
@@ -1109,14 +1109,14 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                           </div>
 
                           {/* Interpretation */}
-                          <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed bg-slate-50/50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                             {item.definition}
                           </p>
                         </div>
 
-                        <div className="border-t border-slate-100 pt-3 mt-3.5 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
+                        <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-3.5 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">
                           <span>Đã chuẩn hóa</span>
-                          <span className="text-slate-500">ID: {item.id}</span>
+                          <span className="text-slate-500 dark:text-slate-400">ID: {item.id}</span>
                         </div>
                       </motion.div>
                     );
@@ -1125,13 +1125,13 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
                 {/* PAGINATION CONTROLS */}
                 {totalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-3xs">
-                    <div className="text-xs text-slate-500 font-medium select-none">
-                      Hiển thị từ <span className="text-slate-700 font-semibold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> đến{" "}
-                      <span className="text-slate-700 font-semibold">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium select-none">
+                      Hiển thị từ <span className="text-slate-700 dark:text-slate-300 font-semibold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> đến{" "}
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold">
                         {Math.min(currentPage * ITEMS_PER_PAGE, filteredLookupList.length)}
                       </span>{" "}
-                      trong tổng số <span className="text-indigo-600 font-black">{filteredLookupList.length}</span> từ vựng
+                      trong tổng số <span className="text-indigo-600 dark:text-indigo-400 font-black">{filteredLookupList.length}</span> từ vựng
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -1142,7 +1142,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         disabled={currentPage === 1}
-                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+                        className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
                         title="Trang trước"
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -1155,7 +1155,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                           const maxVisible = 5;
                           let start = Math.max(1, currentPage - 2);
                           let end = Math.min(totalPages, start + maxVisible - 1);
-                          
+
                           if (end - start + 1 < maxVisible) {
                             start = Math.max(1, end - maxVisible + 1);
                           }
@@ -1171,14 +1171,14 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                                 className={`w-8 h-8 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentPage === 1
                                     ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
                                 }`}
                               >
                                 1
                               </button>
                             );
                             if (start > 2) {
-                              pages.push(<span key="dots-start" className="text-slate-400 text-xs font-bold px-1 select-none">...</span>);
+                              pages.push(<span key="dots-start" className="text-slate-400 dark:text-slate-500 text-xs font-bold px-1 select-none">...</span>);
                             }
                           }
 
@@ -1193,7 +1193,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                                 className={`w-8 h-8 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentPage === p
                                     ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-600 hover:bg-slate-50 text-slate-800 border border-transparent hover:border-slate-100'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-700'
                                 }`}
                               >
                                 {p}
@@ -1203,7 +1203,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
                           if (end < totalPages) {
                             if (end < totalPages - 1) {
-                              pages.push(<span key="dots-end" className="text-slate-400 text-xs font-bold px-1 select-none">...</span>);
+                              pages.push(<span key="dots-end" className="text-slate-400 dark:text-slate-500 text-xs font-bold px-1 select-none">...</span>);
                             }
                             pages.push(
                               <button
@@ -1215,7 +1215,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                                 className={`w-8 h-8 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentPage === totalPages
                                     ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
                                 }`}
                               >
                                 {totalPages}
@@ -1234,7 +1234,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         disabled={currentPage === totalPages}
-                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+                        className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
                         title="Trang sau"
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -1257,12 +1257,12 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           
           {/* SEARCH SELECTIONS PANEL (LEFT COLUMN) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-3xs space-y-4">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Nguồn Học tập Flashcard</h3>
-              
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest">Nguồn Học tập Flashcard</h3>
+
               {/* Pool selection: All vs personal */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Lựa chọn nguồn từ</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Lựa chọn nguồn từ</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
@@ -1273,7 +1273,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                     className={`p-3 rounded-xl border text-xs font-bold text-center cursor-pointer flex flex-col items-center gap-1.5 transition-all ${
                       practiceSource === 'all'
                         ? 'bg-slate-900 border-slate-900 text-white'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <Library className="h-4 w-4" />
@@ -1288,7 +1288,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                     className={`p-3 rounded-xl border text-xs font-bold text-center cursor-pointer flex flex-col items-center gap-1.5 transition-all ${
                       practiceSource === 'personal'
                         ? 'bg-slate-900 border-slate-900 text-white'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <FolderOpen className="h-4 w-4 text-amber-500 fill-amber-500" />
@@ -1299,11 +1299,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
               {/* CEFR Level filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Trình độ từ vựng</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Trình độ từ vựng</label>
                 <select
                   value={practiceLevel}
                   onChange={(e) => setPracticeLevel(e.target.value)}
-                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden text-slate-700 font-semibold cursor-pointer"
+                  className="w-full text-xs p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden text-slate-700 dark:text-white font-semibold cursor-pointer"
                 >
                   <option value="all">Tất cả trình độ</option>
                   <option value="A1">CEFR A1</option>
@@ -1316,11 +1316,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
               {/* Topic Select filter */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Chủ đề cần luyện</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Chủ đề cần luyện</label>
                 <select
                   value={practiceTopic}
                   onChange={(e) => setPracticeTopic(e.target.value)}
-                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden text-slate-700 font-semibold cursor-pointer"
+                  className="w-full text-xs p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden text-slate-700 dark:text-white font-semibold cursor-pointer"
                 >
                   <option value="all">Tất cả chủ đề</option>
                   {/* Filter topic options that belong to source list for cleanliness */}
@@ -1335,14 +1335,14 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
 
               {/* Guessing directions mode selection */}
               <div className="space-y-1 pt-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Chế độ hiển thị mặt trước</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Chế độ hiển thị mặt trước</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => { setGuessMode('word_first'); setIsFlipped(false); }}
                     className={`py-2 px-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
                       guessMode === 'word_first'
-                        ? 'bg-indigo-50 border border-indigo-200 text-indigo-700'
-                        : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400'
+                        : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     Xem từ đoán nghĩa
@@ -1351,8 +1351,8 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                     onClick={() => { setGuessMode('definition_first'); setIsFlipped(false); }}
                     className={`py-2 px-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
                       guessMode === 'definition_first'
-                        ? 'bg-indigo-50 border border-indigo-200 text-indigo-700'
-                        : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400'
+                        : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     Xem nghĩa đoán từ
@@ -1362,11 +1362,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
             </div>
 
             {/* LEARNING TRACKER PANEL */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-3xs space-y-3.5">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs space-y-3.5">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Tiến trình đợt học</h4>
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider">Tiến trình đợt học</h4>
                 {masteredIds.length > 0 && (
-                  <button 
+                  <button
                     onClick={resetMasterySession}
                     className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center gap-1"
                   >
@@ -1374,22 +1374,22 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                   </button>
                 )}
               </div>
-              
-              <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
+
+              <div className="flex justify-between items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <span>Số từ đã thuộc lòng:</span>
-                <span className="text-indigo-600 font-extrabold">{masteredIds.length} / {practiceWords.length}</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{masteredIds.length} / {practiceWords.length}</span>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-600 rounded-full transition-all duration-300" 
+              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-600 rounded-full transition-all duration-300"
                   style={{ width: `${practiceWords.length > 0 ? (masteredIds.length / practiceWords.length) * 100 : 0}%` }}
                 />
               </div>
 
-              <div className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                Mẹo: Nhấn nút <strong className="text-slate-600">Space</strong> để lật thẻ, <strong className="text-slate-600">Left/Right arrows</strong> thay đổi từ kế tiếp hoặc nhấn phím để duy trì tốc độ ôn tập.
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed">
+                Mẹo: Nhấn nút <strong className="text-slate-600 dark:text-slate-300">Space</strong> để lật thẻ, <strong className="text-slate-600 dark:text-slate-300">Left/Right arrows</strong> thay đổi từ kế tiếp hoặc nhấn phím để duy trì tốc độ ôn tập.
               </div>
             </div>
           </div>
@@ -1398,11 +1398,11 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           <div className="lg:col-span-8 flex flex-col justify-between space-y-4">
             
             {practiceWords.length === 0 ? (
-              <div className="bg-white p-16 rounded-3xl border border-slate-200/80 shadow-3xs text-center flex-1 flex flex-col justify-center items-center">
-                <BookOpen className="h-12 w-12 text-slate-300 mb-2 animate-pulse" />
-                <p className="text-sm font-bold text-slate-700 leading-snug">Không có mục học tập thảo luận phù hợp.</p>
-                <p className="text-xs text-slate-400 max-w-[280px] mt-1 mx-auto">
-                  {practiceSource === 'personal' 
+              <div className="bg-white dark:bg-slate-900 p-16 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-3xs text-center flex-1 flex flex-col justify-center items-center">
+                <BookOpen className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-2 animate-pulse" />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 leading-snug">Không có mục học tập thảo luận phù hợp.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[280px] mt-1 mx-auto">
+                  {practiceSource === 'personal'
                     ? "Sổ tay cá nhân của bạn hiện chưa có từ vựng nào được đánh dấu. Hãy quay lại mục Tra cứu từ vựng để thêm một số từ trước."
                     : "Không tìm thấy từ vựng tương ứng trong thư viện với tiêu chuẩn bộ lọc đã chọn."
                   }
@@ -1419,13 +1419,13 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
             ) : (
               // ACTIVE DEPLOYED CARD DISPLAY
               <div className="space-y-6 flex-1 flex flex-col justify-between">
-                
+
                 {/* Header indicators */}
-                <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-400 dark:text-slate-500">
                   <span>Mục ôn {currentIndex + 1} trên {practiceWords.length} mục</span>
                   <div className="flex gap-1.5">
                     {masteredIds.includes(practiceWords[currentIndex].id) && (
-                      <span className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                      <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/40 text-[10px]">
                         <Check className="h-3 w-3" /> ĐÃ THUỘC
                       </span>
                     )}
@@ -1445,15 +1445,15 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                   >
                     
                     {/* CARD MINIMAL FRONT FACE */}
-                    <div 
-                      className={`absolute inset-0 w-full h-full bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 flex flex-col justify-between`}
+                    <div
+                      className={`absolute inset-0 w-full h-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-6 flex flex-col justify-between`}
                       style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-extrabold px-2.5 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-md uppercase">
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400 rounded-md uppercase">
                           CEFR {practiceWords[currentIndex].level}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-[200px] truncate">
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest max-w-[200px] truncate">
                           {practiceWords[currentIndex].topic}
                         </span>
                       </div>
@@ -1462,14 +1462,14 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                       <div className="text-center space-y-3.5 my-auto">
                         {guessMode === 'word_first' ? (
                           <>
-                            <h3 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+                            <h3 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                               {practiceWords[currentIndex].word}
                             </h3>
                             <div className="flex items-center justify-center gap-2">
-                              <span className="text-xs font-bold text-indigo-600 font-mono">
+                              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">
                                 ({practiceWords[currentIndex].type})
                               </span>
-                              <span className="text-xs text-slate-400 font-mono font-medium">
+                              <span className="text-xs text-slate-400 dark:text-slate-500 font-mono font-medium">
                                 {practiceWords[currentIndex].pronunciation}
                               </span>
                               <button
@@ -1477,7 +1477,7 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                                   e.stopPropagation(); // prevent flipping
                                   handleSpeak(practiceWords[currentIndex].word);
                                 }}
-                                className="p-1.5 hover:bg-indigo-50 text-indigo-500 rounded-lg cursor-pointer transition-colors"
+                                className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 rounded-lg cursor-pointer transition-colors"
                               >
                                 <Volume2 className="h-4 w-4" />
                               </button>
@@ -1485,15 +1485,15 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                           </>
                         ) : (
                           <div className="px-6 md:px-12 space-y-2.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Định nghĩa tiếng Anh:</span>
-                            <p className="text-sm md:text-base text-slate-700 font-semibold leading-relaxed">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Định nghĩa tiếng Anh:</span>
+                            <p className="text-sm md:text-base text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
                               "{practiceWords[currentIndex].definition}"
                             </p>
                           </div>
                         )}
                       </div>
 
-                      <div className="text-center text-[10px] text-slate-400 font-bold uppercase py-1 border-t border-slate-100 flex items-center justify-center gap-1">
+                      <div className="text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase py-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-1">
                         <RotateCw className="h-3 w-3 text-indigo-505" /> Bấm vào thẻ hoặc nhấn Space để đối chiếu nghĩa
                       </div>
                     </div>
@@ -1594,20 +1594,20 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                 <div className="flex gap-4 items-center justify-between">
                   <button
                     onClick={handlePrevCard}
-                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-3xs cursor-pointer active:scale-98 transition-transform"
+                    className="flex-1 py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-3xs cursor-pointer active:scale-98 transition-transform"
                   >
                     <ArrowLeft className="h-4 w-4" /> Từ trước đó
                   </button>
                   <button
                     onClick={() => setIsFlipped(prev => !prev)}
-                    className="p-3 bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     title="Lật thẻ"
                   >
                     <RotateCw className="h-4 w-4" /> Lật thẻ
                   </button>
                   <button
                     onClick={handleNextCard}
-                    className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-3xs cursor-pointer active:scale-98 transition-transform"
+                    className="flex-1 py-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-3xs cursor-pointer active:scale-98 transition-transform"
                   >
                     Từ kế tiếp <ArrowRight className="h-4 w-4" />
                   </button>
@@ -1625,14 +1625,14 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           
           {/* CONF AND GUIDE PANEL (LEFT COLUMN) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-3xs space-y-4">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
                 <Info className="h-4 w-4 text-indigo-500" /> Cấu hình Nhập (.txt)
               </h3>
 
               {/* CEFR Level selection to attach imported words to */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Trình độ từ vựng Gốc</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Trình độ từ vựng Gốc</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
                     <button
@@ -1649,49 +1649,49 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                       className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all border ${
                         importLevel === lvl
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       {lvl}
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1 leading-normal font-medium">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 leading-normal font-medium">
                   Tất cả từ vựng được phân tách trong tập tin .txt tải lên sẽ được ghi nhận dưới trình độ này.
                 </p>
               </div>
 
               {/* Wipe-out existing vocab of selected level option */}
-              <div className="pt-3 border-t border-slate-100">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
                 <label className="flex items-start gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={clearExistingBeforeImport}
                     onChange={(e) => setClearExistingBeforeImport(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                   />
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-slate-700 block">Xóa sạch dữ liệu đã lưu</span>
-                    <span className="text-[10px] font-medium text-slate-500 leading-normal block">
-                      Xóa toàn bộ từ vựng đã nhập trước đó của trình độ <b className="text-indigo-600 font-bold">{importLevel}</b> trước khi thêm mới.
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">Xóa sạch dữ liệu đã lưu</span>
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-normal block">
+                      Xóa toàn bộ từ vựng đã nhập trước đó của trình độ <b className="text-indigo-600 dark:text-indigo-400 font-bold">{importLevel}</b> trước khi thêm mới.
                     </span>
                   </div>
                 </label>
               </div>
 
               {/* Format guidelines helper box */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Hướng dẫn Định dạng tệp</h4>
-                <div className="text-[11px] text-slate-600 space-y-2 leading-relaxed">
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Hướng dẫn Định dạng tệp</h4>
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed">
                   <p>Để hệ thống tự động nhận dạng chính xác, vui lòng chuẩn bị tệp tin <b>.txt</b> theo định dạng CSV sau:</p>
-                  
-                  <div className="space-y-1.5 font-mono text-[9.5px] bg-white p-2 rounded-lg border border-slate-200 leading-tight">
-                    <p className="text-indigo-650 font-bold">// Dòng đầu tiên (Tiêu đề tệp):</p>
-                    <p className="text-slate-700 font-semibold">No.,Topic,Word,Type,Pronunciation,Definition</p>
-                    <p className="text-indigo-650 font-bold mt-2">// Các dòng dữ liệu tiếp theo:</p>
-                    <p>1,Animals,skunk,n.,/skAnk/,"Small black-and-white mammal producing strong unpleasant smell."</p>
-                    <p>2,Animals,flock,n.,/fla:k/,"A group of birds of the same type together."</p>
-                    <p className="text-slate-400 mt-2 italic">// Lưu ý: Nếu định nghĩa có dấu phẩy (,), vui lòng đặt định nghĩa trong cặp dấu ngoặc kép "" để tránh phân tách sai cột.</p>
+
+                  <div className="space-y-1.5 font-mono text-[9.5px] bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700 leading-tight">
+                    <p className="text-indigo-650 dark:text-indigo-400 font-bold">// Dòng đầu tiên (Tiêu đề tệp):</p>
+                    <p className="text-slate-700 dark:text-slate-300 font-semibold">No.,Topic,Word,Type,Pronunciation,Definition</p>
+                    <p className="text-indigo-650 dark:text-indigo-400 font-bold mt-2">// Các dòng dữ liệu tiếp theo:</p>
+                    <p className="text-slate-600 dark:text-slate-400">1,Animals,skunk,n.,/skAnk/,"Small black-and-white mammal producing strong unpleasant smell."</p>
+                    <p className="text-slate-600 dark:text-slate-400">2,Animals,flock,n.,/fla:k/,"A group of birds of the same type together."</p>
+                    <p className="text-slate-400 dark:text-slate-500 mt-2 italic">// Lưu ý: Nếu định nghĩa có dấu phẩy (,), vui lòng đặt định nghĩa trong cặp dấu ngoặc kép "" để tránh phân tách sai cột.</p>
                   </div>
                 </div>
               </div>
@@ -1748,23 +1748,23 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
           {/* UPLOAD BOX OR INTERACTIVE PREVIEW LISTING (RIGHT COLUMN) */}
           <div className="lg:col-span-8 flex flex-col justify-start">
             {!fileName ? (
-              <div 
+              <div
                 onDragEnter={handleDrag}
                 onDragOver={handleDrag}
                 onDragLeave={handleDrag}
                 onDrop={handleDrop}
-                className={`py-20 px-8 rounded-3xl border-2 border-dashed text-center flex flex-col justify-center items-center transition-all min-h-[450px] bg-white relative ${
-                  dragActive 
-                    ? 'border-indigo-505 bg-indigo-50/50 scale-[0.99]' 
-                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50/40'
+                className={`py-20 px-8 rounded-3xl border-2 border-dashed text-center flex flex-col justify-center items-center transition-all min-h-[450px] bg-white dark:bg-slate-900 relative ${
+                  dragActive
+                    ? 'border-indigo-505 bg-indigo-50/50 dark:bg-indigo-950/30 scale-[0.99]'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-800 hover:bg-slate-50/40 dark:hover:bg-slate-800/40'
                 }`}
               >
-                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-full mb-4">
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <Upload className="h-8 w-8 animate-bounce" />
                 </div>
-                
-                <h3 className="text-base font-extrabold text-slate-800 leading-tight">Tải lên danh sách học tập (.txt)</h3>
-                <p className="text-xs text-slate-505 max-w-[380px] mt-1.5 leading-relaxed font-semibold">
+
+                <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-300 leading-tight">Tải lên danh sách học tập (.txt)</h3>
+                <p className="text-xs text-slate-505 dark:text-slate-400 max-w-[380px] mt-1.5 leading-relaxed font-semibold">
                   Kéo và thả tệp văn bản từ máy tính của bạn vào đây, hoặc nhấn để duyệt lựa chọn tệp .txt chứa danh mục.
                 </p>
 
@@ -1778,23 +1778,23 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                   />
                 </label>
 
-                <div className="mt-8 pt-6 border-t border-slate-100 w-full max-w-[420px] text-left text-[11px] text-slate-400 space-y-1.5 px-4 leading-normal font-medium">
-                  <p className="font-bold uppercase tracking-wider text-slate-500 mb-1">💡 LƯU Ý QUAN TRỌNG:</p>
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 w-full max-w-[420px] text-left text-[11px] text-slate-400 dark:text-slate-500 space-y-1.5 px-4 leading-normal font-medium">
+                  <p className="font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">💡 LƯU Ý QUAN TRỌNG:</p>
                   <p>• Hệ thống sẽ tự động đối chiếu các mục từ vựng mới với thư viện mặc định.</p>
                   <p>• Loại bỏ toàn bộ từ vựng song trùng để tránh nhiễu và lưu bộ nhớ đám mây của bạn.</p>
                 </div>
               </div>
             ) : (
               // ACTIVE PREVIEW OF THE PARSED FILE
-              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-3xs flex flex-col h-full min-h-[500px]">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-3xs flex flex-col h-full min-h-[500px]">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-300 flex items-center gap-2">
                       <FileText className="h-4.5 w-4.5 text-indigo-500" />
-                      Xem trước: <span className="text-indigo-600 max-w-[200px] truncate">{fileName}</span>
+                      Xem trước: <span className="text-indigo-600 dark:text-indigo-400 max-w-[200px] truncate">{fileName}</span>
                     </h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
-                      Trình độ gán: <span className="text-indigo-600">CEFR {importLevel}</span>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">
+                      Trình độ gán: <span className="text-indigo-600 dark:text-indigo-400">CEFR {importLevel}</span>
                     </p>
                   </div>
 
@@ -1810,44 +1810,44 @@ export default function VocabularyView({ currentUser, onShowModal }: VocabularyV
                 </div>
 
                 {parsedItems.length === 0 ? (
-                  <div className="flex flex-col justify-center items-center my-auto py-12 text-slate-400">
+                  <div className="flex flex-col justify-center items-center my-auto py-12 text-slate-400 dark:text-slate-500">
                     <AlertCircle className="h-8 w-8 text-amber-500 mb-2" />
                     <p className="text-xs font-bold">Không tìm thấy từ vựng hợp lệ trong tệp.</p>
-                    <p className="text-[10px] text-slate-400">Kiểm tra lại dấu tách dòng hoặc dòng trống.</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Kiểm tra lại dấu tách dòng hoặc dòng trống.</p>
                   </div>
                 ) : (
                   <div className="flex-1 overflow-y-auto max-h-[500px] pr-1 space-y-2">
                     {parsedItems.map((item, id) => {
                       const dupSource = isDuplicateItem(item.word, item.level, clearExistingBeforeImport ? importLevel : undefined);
                       return (
-                        <div 
+                        <div
                           key={id}
                           className={`p-3 rounded-xl border text-xs flex justify-between items-center transition-all ${
-                            dupSource 
-                              ? 'bg-rose-50/50 border-rose-100 text-slate-400 opacity-60' 
-                              : 'bg-slate-50/70 border-slate-200/70 text-slate-800'
+                            dupSource
+                              ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40 text-slate-400 dark:text-slate-500 opacity-60'
+                              : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200/70 dark:border-slate-800 text-slate-800 dark:text-slate-300'
                           }`}
                         >
                           <div className="space-y-1 max-w-[80%]">
                             <div className="flex items-center gap-2">
-                              <h4 className={`font-extrabold text-sm ${dupSource ? 'line-through text-slate-450' : 'text-slate-900'}`}>{item.word}</h4>
-                              <span className="text-[10px] font-bold text-indigo-500 font-mono italic">({item.type})</span>
+                              <h4 className={`font-extrabold text-sm ${dupSource ? 'line-through text-slate-450 dark:text-slate-500' : 'text-slate-900 dark:text-white'}`}>{item.word}</h4>
+                              <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 font-mono italic">({item.type})</span>
                               {item.pronunciation && (
-                                <span className="text-[10px] text-slate-450 font-mono font-medium">{item.pronunciation}</span>
+                                <span className="text-[10px] text-slate-450 dark:text-slate-500 font-mono font-medium">{item.pronunciation}</span>
                               )}
                             </div>
-                            <p className="text-slate-500 font-medium text-[11px] leading-snug">{item.definition}</p>
-                            <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 border border-slate-300 rounded font-bold uppercase text-slate-500">
+                            <p className="text-slate-500 dark:text-slate-400 font-medium text-[11px] leading-snug">{item.definition}</p>
+                            <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded font-bold uppercase text-slate-500 dark:text-slate-400">
                               Chủ đề: {item.topic}
                             </span>
                           </div>
 
                           {dupSource ? (
-                            <span className="px-2 py-1 bg-rose-100 text-rose-750 rounded-md font-bold text-[9px] uppercase tracking-wide">
+                            <span className="px-2 py-1 bg-rose-100 dark:bg-rose-950/30 text-rose-750 dark:text-rose-400 rounded-md font-bold text-[9px] uppercase tracking-wide">
                               Trùng ({dupSource})
                             </span>
                           ) : (
-                            <span className="px-2 py-1 bg-emerald-100 text-emerald-850 rounded-md font-bold text-[9px] uppercase tracking-wide font-sans">
+                            <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-850 dark:text-emerald-400 rounded-md font-bold text-[9px] uppercase tracking-wide font-sans">
                               Sẵn sàng
                             </span>
                           )}

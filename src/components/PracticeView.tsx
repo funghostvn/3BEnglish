@@ -126,18 +126,18 @@ export default function PracticeView({
         />
       )}
 
-      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-xs p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b pb-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xs p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-slate-900 font-bold font-display tracking-tight text-base md:text-lg">Danh sách đề thi theo phân nhóm</h3>
+            <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="text-slate-900 dark:text-white font-bold font-display tracking-tight text-base md:text-lg">Danh sách đề thi theo phân nhóm</h3>
           </div>
 
-          <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
+          <div className="flex flex-wrap gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               type="button"
               onClick={() => setSelectedClassificationFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${selectedClassificationFilter === 'all' ? 'bg-white text-indigo-600 shadow-3xs' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${selectedClassificationFilter === 'all' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-3xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
               Tất cả
             </button>
@@ -146,7 +146,7 @@ export default function PracticeView({
                 key={cls}
                 type="button"
                 onClick={() => setSelectedClassificationFilter(cls)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${selectedClassificationFilter === cls ? 'bg-white text-indigo-600 shadow-3xs' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${selectedClassificationFilter === cls ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-3xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
               >
                 {cls === 'Đề thi chính thức các năm' ? 'Đề chính thức' : cls === 'Đề thi thử từ các đơn vị' ? 'Đề thi thử' : 'Đề minh họa'}
               </button>
@@ -161,9 +161,9 @@ export default function PracticeView({
               placeholder="Tìm kiếm đề thi bằng tiêu đề hoặc mã đề..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pl-11 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 transition-all font-sans"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pl-11 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 transition-all font-sans"
             />
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 absolute left-4 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 dark:text-slate-500 absolute left-4 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -173,7 +173,7 @@ export default function PracticeView({
               value={yearFilter}
               onChange={(e) => setYearFilter(e.target.value)}
               title="Lọc theo năm phát hành đề"
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
               <option value="all">Mọi năm</option>
               {availableYears.map(y => (
@@ -185,7 +185,7 @@ export default function PracticeView({
               value={doneFilter}
               onChange={(e) => setDoneFilter(e.target.value as 'all' | 'done' | 'not_done')}
               title="Lọc theo trạng thái luyện tập của bạn"
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="not_done">Chưa làm lần nào</option>
@@ -195,15 +195,15 @@ export default function PracticeView({
         </div>
 
         {exams.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-sm">
+          <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-sm">
             Không tìm thấy đề thi chính thức nào cho Lớp hiện tại. Vui lòng bấm vào "Quản lý đề thi" để nạp dữ liệu mẫu/JSON.
           </div>
         ) : classificationFilteredExams.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-sm">
+          <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-sm">
             Không tìm thấy đề thi nào thuộc phân loại "<b>{selectedClassificationFilter}</b>" cho Lớp hiện tại.
           </div>
         ) : filteredExams.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-sm">
+          <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-sm">
             Không tìm thấy đề thi nào phù hợp với từ khóa "<b>{searchQuery}</b>".
           </div>
         ) : (
@@ -216,41 +216,41 @@ export default function PracticeView({
                 : '--';
 
               return (
-                <div key={exam.id} className="p-5 border border-slate-200/60 rounded-2xl hover:border-indigo-500 hover:shadow-xs transition-all flex flex-col justify-between">
+                <div key={exam.id} className="p-5 border border-slate-200/60 dark:border-slate-800 rounded-2xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-xs transition-all flex flex-col justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap gap-2">
-                      <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase">Khóa: Lớp {exam.grade}</span>
-                      <span className="bg-slate-50 text-slate-600 text-[10px] px-2.5 py-0.5 rounded-md font-semibold font-mono">Năm: {exam.year}</span>
+                      <span className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase">Khóa: Lớp {exam.grade}</span>
+                      <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2.5 py-0.5 rounded-md font-semibold font-mono">Năm: {exam.year}</span>
                       {exam.classification && (
-                        <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-100/50">{exam.classification}</span>
+                        <span className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-100/50 dark:border-emerald-900/40">{exam.classification}</span>
                       )}
                     </div>
 
-                    <h4 className="font-bold font-display tracking-tight text-slate-900 text-sm leading-snug line-clamp-2 md:mr-2">
+                    <h4 className="font-bold font-display tracking-tight text-slate-900 dark:text-white text-sm leading-snug line-clamp-2 md:mr-2">
                       {exam.examName || exam.title}
                     </h4>
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 font-medium">
-                      <span>Số câu: <b className="font-bold text-slate-700">{exam.numQuestions} câu</b></span>
-                      <span>Thời gian: <b className="font-bold text-slate-700">{exam.duration} phút</b></span>
-                      <span>Đơn vị: <b className="font-bold text-slate-700">{exam.publisher || "Chưa rõ"}</b></span>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      <span>Số câu: <b className="font-bold text-slate-700 dark:text-slate-300">{exam.numQuestions} câu</b></span>
+                      <span>Thời gian: <b className="font-bold text-slate-700 dark:text-slate-300">{exam.duration} phút</b></span>
+                      <span>Đơn vị: <b className="font-bold text-slate-700 dark:text-slate-300">{exam.publisher || "Chưa rõ"}</b></span>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between bg-slate-50 p-2 rounded-lg text-xs border border-slate-100">
+                    <div className="mt-2 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg text-xs border border-slate-100 dark:border-slate-800">
                       <div className="flex flex-col">
-                        <span className="text-slate-400 font-medium">Số lần làm</span>
-                        <span className="font-bold text-indigo-700 text-sm">{attemptCount}</span>
+                        <span className="text-slate-400 dark:text-slate-500 font-medium">Số lần làm</span>
+                        <span className="font-bold text-indigo-700 dark:text-indigo-400 text-sm">{attemptCount}</span>
                       </div>
                       <div className="flex flex-col text-right">
-                        <span className="text-slate-400 font-medium">Điểm trung bình</span>
-                        <span className="font-bold text-emerald-600 text-sm">{avgScore} <span className="text-[10px] text-slate-400 font-normal">/ 10</span></span>
+                        <span className="text-slate-400 dark:text-slate-500 font-medium">Điểm trung bình</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{avgScore} <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">/ 10</span></span>
                       </div>
                     </div>
                   </div>
 
                   <button
                     onClick={() => session.startDirectExam(exam)}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white hover:bg-slate-800 text-xs font-bold py-2.5 px-3 rounded-xl active:scale-97 transition-all flex items-center justify-center gap-1.5 mt-5 cursor-pointer shadow-xs"
+                    className="w-full bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl active:scale-97 transition-all flex items-center justify-center gap-1.5 mt-5 cursor-pointer shadow-xs"
                   >
                     Vào luyện đề <ArrowRight className="h-3.5 w-3.5" />
                   </button>

@@ -675,9 +675,9 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
   if (editingExam && editMode === 'detail') {
     const passage = editingExam.passages[activePassageIdx];
     return (
-      <div className="min-h-screen bg-slate-50/50 pb-20 animate-in fade-in duration-200">
+      <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 pb-20 animate-in fade-in duration-200">
         {/* Workshop Navigation Header Panel */}
-        <div className="bg-slate-900 text-white border-b sticky top-0 z-40 px-6 py-4 shadow-md">
+        <div className="bg-slate-900 text-white border-b dark:border-slate-800 sticky top-0 z-40 px-6 py-4 shadow-md">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="space-y-1">
               <button 
@@ -732,12 +732,12 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
             
             {/* Left sidebar: Passages menu */}
             <div className="lg:col-span-4 space-y-4">
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/60 shadow-xs space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b">
-                  <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xs space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b dark:border-slate-800">
+                  <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-300 flex items-center gap-1.5">
                     <Layers className="h-4 w-4 text-indigo-500" /> Nhóm học liệu / Đọc hiểu
                   </h3>
-                  <span className="text-[10px] font-bold font-mono bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-bold font-mono bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded">
                     {editingExam.passages.length} Phân đoạn
                   </span>
                 </div>
@@ -748,20 +748,20 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                       key={idx}
                       onClick={() => setActivePassageIdx(idx)}
                       className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${
-                        activePassageIdx === idx 
-                          ? 'border-indigo-500 bg-indigo-50/50 hover:bg-indigo-50 shadow-3xs' 
-                          : 'border-slate-100 hover:bg-slate-50'
+                        activePassageIdx === idx
+                          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 shadow-3xs'
+                          : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="space-y-1 text-left flex-1 min-w-0 pr-2">
-                        <p className="font-bold text-xs truncate text-slate-900">
+                        <p className="font-bold text-xs truncate text-slate-900 dark:text-white">
                           #{idx + 1}. {p.title || `Nhóm câu hỏi ${idx + 1}`}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-mono">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-400 font-mono">
                           {p.questions.length} câu hỏi • {p.vocabularyCategory || "Chủ đề: Tự do"}
                         </p>
                       </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                     </div>
                   ))}
                 </div>
@@ -770,7 +770,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                   <button
                     type="button"
                     onClick={addPassageToDetailEdit}
-                    className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Plus className="h-4 w-4 text-indigo-500" /> + Đăng ký Nhóm mới
                   </button>
@@ -778,12 +778,12 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
               </div>
 
               {/* Utility guides */}
-              <div className="bg-indigo-50/30 p-5 rounded-3xl border border-indigo-100/40 text-xs space-y-2">
-                <h4 className="font-bold text-indigo-900 flex items-center gap-1.5">
-                  <Info className="h-4 w-4 text-indigo-600" /> Cẩm nang biên tập sư
+              <div className="bg-indigo-50/30 dark:bg-indigo-950/20 p-5 rounded-3xl border border-indigo-100/40 dark:border-indigo-900/40 text-xs space-y-2">
+                <h4 className="font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                  <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Cẩm nang biên tập sư
                 </h4>
-                <ul className="list-disc pl-4 space-y-1.5 text-slate-600 leading-relaxed">
-                  <li>Sử dụng các thẻ HTML cơ bản như <code className="bg-white px-1 py-0.5 rounded border">&lt;b&gt;</code> hoặc <code className="bg-white px-1 py-0.5 rounded border">&lt;u&gt;</code> để cấu trúc đoạn văn, bài đọc lỗ.</li>
+                <ul className="list-disc pl-4 space-y-1.5 text-slate-600 dark:text-slate-400 leading-relaxed">
+                  <li>Sử dụng các thẻ HTML cơ bản như <code className="bg-white dark:bg-slate-800 px-1 py-0.5 rounded border dark:border-slate-700">&lt;b&gt;</code> hoặc <code className="bg-white dark:bg-slate-800 px-1 py-0.5 rounded border dark:border-slate-700">&lt;u&gt;</code> để cấu trúc đoạn văn, bài đọc lỗ.</li>
                   <li>Mã câu hỏi tự lập thứ tự động bộ thống nhất trên toàn đề thi.</li>
                   <li>Lời giải chi tiết giúp tự bồi dưỡng kiến thức hổng.</li>
                 </ul>
@@ -796,41 +796,41 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                 <div className="space-y-6 animate-in fade-in duration-200">
                   
                   {/* Selected Passage properties */}
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs space-y-4 relative">
-                    <div className="flex justify-between items-center border-b pb-3">
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xs space-y-4 relative">
+                    <div className="flex justify-between items-center border-b dark:border-slate-800 pb-3">
                       <div>
-                        <span className="text-[9px] font-mono font-black text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded">CHI TIẾT NHÓM #{activePassageIdx + 1}</span>
-                        <h3 className="font-extrabold text-slate-900 text-sm mt-1">{passage.title || `Nhóm câu hỏi ${activePassageIdx + 1}`}</h3>
+                        <span className="text-[9px] font-mono font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40 px-2 py-0.5 rounded">CHI TIẾT NHÓM #{activePassageIdx + 1}</span>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-sm mt-1">{passage.title || `Nhóm câu hỏi ${activePassageIdx + 1}`}</h3>
                       </div>
                       {editingExam.passages.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removePassageFromDetailEdit(activePassageIdx)}
-                          className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-bold cursor-pointer transition-all"
+                          className="text-xs bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-bold cursor-pointer transition-all"
                         >
                           <Trash2 className="h-3.5 w-3.5" /> Gỡ nhóm này
                         </button>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-700 dark:text-slate-300">
                       <div>
-                        <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Tên Nhóm/Đoạn văn (title):</label>
+                        <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Tên Nhóm/Đoạn văn (title):</label>
                         <input
                           type="text"
                           value={passage.title || ''}
                           onChange={(e) => updatePassageFieldInDetail(activePassageIdx, 'title', e.target.value)}
-                          className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                          className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                           placeholder="Ví dụ: Reading Passage 1"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Nhóm Từ vựng liên quan (vocabularyCategory):</label>
+                        <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Nhóm Từ vựng liên quan (vocabularyCategory):</label>
                         <select
                           value={passage.vocabularyCategory || ''}
                           onChange={(e) => updatePassageFieldInDetail(activePassageIdx, 'vocabularyCategory', e.target.value)}
-                          className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                          className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                         >
                           <option value="">-- Tự do (Không phân nhóm từ vựng) --</option>
                           {VOCABULARY_THEMES.map(v => (
@@ -841,15 +841,15 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                       <div className="md:col-span-2">
                         <div className="flex justify-between items-center mb-1">
-                          <label className="block text-slate-400 uppercase tracking-wider text-[9px]">Văn bản bài đọc / Hướng dẫn đề thi (content):</label>
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px]">Văn bản bài đọc / Hướng dẫn đề thi (content):</label>
+                          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-400">
                             Số từ: {passage.content ? passage.content.split(/\s+/).filter(Boolean).length : 0} từ
                           </span>
                         </div>
                         <textarea
                           value={passage.content || ''}
                           onChange={(e) => updatePassageFieldInDetail(activePassageIdx, 'content', e.target.value)}
-                          className="w-full font-mono text-xs border p-3 rounded-xl focus:outline-hidden focus:ring-1 focus:ring-indigo-500 bg-slate-50 font-normal leading-relaxed"
+                          className="w-full font-mono text-xs border border-slate-200 dark:border-slate-700 p-3 rounded-xl focus:outline-hidden focus:ring-1 focus:ring-indigo-500 bg-slate-50 dark:bg-slate-800 font-normal leading-relaxed text-slate-800 dark:text-white"
                           rows={6}
                           placeholder="Điền đoạn văn bản đọc hiểu tiếng Anh hoặc chỉ dẫn ngữ pháp..."
                         />
@@ -859,56 +859,56 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                   {/* List of Questions in active passage */}
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200/60 shadow-3xs">
-                      <h4 className="font-extrabold text-xs text-slate-900 uppercase">Danh sách câu hỏi liên đới ({passage.questions.length} câu)</h4>
+                    <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-3xs">
+                      <h4 className="font-extrabold text-xs text-slate-900 dark:text-white uppercase">Danh sách câu hỏi liên đới ({passage.questions.length} câu)</h4>
                       <button
                         type="button"
                         onClick={() => addQuestionToPassageInDetailEdit(activePassageIdx)}
-                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all border border-indigo-100"
+                        className="bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all border border-indigo-100 dark:border-indigo-900/40"
                       >
                         <Plus className="h-3.5 w-3.5" /> + Tạo câu hỏi mới
                       </button>
                     </div>
 
                     {passage.questions.length === 0 ? (
-                      <div className="text-center py-12 bg-white rounded-3xl border border-dashed text-slate-400 text-xs font-bold">
+                      <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-dashed dark:border-slate-700 text-slate-400 dark:text-slate-400 text-xs font-bold">
                         Đoạn này hiện chưa có câu hỏi nào. Nhấn "+ Tạo câu hỏi mới" phía trên để nạp.
                       </div>
                     ) : (
                       <div className="space-y-5">
                         {passage.questions.map((q, qIdx) => (
-                          <div 
+                          <div
                             key={qIdx}
                             id={`editor-question-card-${q.questionNumber}`}
-                            className="bg-white p-6 rounded-3xl border border-slate-200 hover:shadow-2xs transition-all space-y-4 relative scroll-mt-24"
+                            className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 hover:shadow-2xs transition-all space-y-4 relative scroll-mt-24"
                           >
-                            <div className="flex justify-between items-center border-b pb-2">
+                            <div className="flex justify-between items-center border-b dark:border-slate-800 pb-2">
                               <span className="bg-slate-900 text-white font-mono text-[10px] font-extrabold px-3 py-0.5 rounded-md uppercase">
                                 Câu hỏi #{q.questionNumber}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => removeQuestionFromPassageInDetailEdit(activePassageIdx, qIdx)}
-                                className="text-slate-400 hover:text-rose-600 font-bold text-xs flex items-center gap-1 cursor-pointer transition-all"
+                                className="text-slate-400 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 font-bold text-xs flex items-center gap-1 cursor-pointer transition-all"
                                 title="Xóa câu hỏi này"
                               >
                                 <Trash2 className="h-3.5 w-3.5" /> Gỡ câu
                               </button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-700">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-slate-700 dark:text-slate-300">
                               <div className="md:col-span-2">
-                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Nội dung câu hỏi (text - Hỗ trợ HTML):</label>
+                                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Nội dung câu hỏi (text - Hỗ trợ HTML):</label>
                                 <textarea
                                   value={q.text || ''}
                                   onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'text', e.target.value)}
-                                  className="w-full border p-2.5 rounded-xl font-normal text-xs bg-slate-50 focus:ring-1 focus:ring-indigo-500 font-mono"
+                                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-normal text-xs bg-slate-50 dark:bg-slate-800 focus:ring-1 focus:ring-indigo-500 font-mono text-slate-800 dark:text-white"
                                   rows={2.5}
                                   placeholder="Nhập nội dung câu hỏi..."
                                 />
                                 {q.text && (
-                                  <div className="mt-2 bg-slate-50 p-2.5 text-[11px] font-normal border rounded-xl leading-relaxed text-slate-600">
-                                    <span className="text-[10px] font-bold text-indigo-600 block mb-0.5 font-sans uppercase">Hình ảnh hiển thị học sinh:</span>
+                                  <div className="mt-2 bg-slate-50 dark:bg-slate-800 p-2.5 text-[11px] font-normal border dark:border-slate-700 rounded-xl leading-relaxed text-slate-600 dark:text-slate-400">
+                                    <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block mb-0.5 font-sans uppercase">Hình ảnh hiển thị học sinh:</span>
                                     <div dangerouslySetInnerHTML={{ __html: q.text }} />
                                   </div>
                                 )}
@@ -916,17 +916,17 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                               {/* Choices Options Grid — hidden for free-text questions */}
                               {!isTextInputQuestion(q) && (
-                                <div className="md:col-span-2 p-4 bg-slate-50/50 rounded-2xl border border-dashed space-y-3">
-                                  <span className="block text-indigo-700 text-[10px] uppercase font-extrabold tracking-wider mb-1">Danh sách lựa chọn đáp án:</span>
+                                <div className="md:col-span-2 p-4 bg-slate-50/50 dark:bg-slate-800/60 rounded-2xl border border-dashed dark:border-slate-700 space-y-3">
+                                  <span className="block text-indigo-700 dark:text-indigo-400 text-[10px] uppercase font-extrabold tracking-wider mb-1">Danh sách lựa chọn đáp án:</span>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                                     {['A', 'B', 'C', 'D'].map(optKey => (
                                       <div key={optKey}>
-                                        <label className="block text-slate-400 text-[9px] mb-0.5">Lựa chọn ({optKey}):</label>
+                                        <label className="block text-slate-400 dark:text-slate-400 text-[9px] mb-0.5">Lựa chọn ({optKey}):</label>
                                         <input
                                           type="text"
                                           value={q.options[optKey] || ''}
                                           onChange={(e) => updateQuestionOptionInDetail(activePassageIdx, qIdx, optKey, e.target.value)}
-                                          className="w-full border px-3 py-2 rounded-xl font-normal bg-white text-xs focus:ring-1 focus:ring-indigo-500"
+                                          className="w-full border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl font-normal bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                                           placeholder={`Đáp án ${optKey}`}
                                         />
                                       </div>
@@ -937,7 +937,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                               {/* Dropdowns */}
                               <div>
-                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">
+                                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">
                                   {isTextInputQuestion(q) ? 'Đáp án Đúng (tự luận):' : 'Đáp án Đúng:'}
                                 </label>
                                 {isTextInputQuestion(q) ? (
@@ -946,16 +946,16 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                                       type="text"
                                       value={q.correctAnswer || ''}
                                       onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'correctAnswer', e.target.value)}
-                                      className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                                      className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                                       placeholder="VD: was going | went"
                                     />
-                                    <p className="text-[9px] text-slate-400 mt-1 font-medium normal-case">Câu tự luận (không có lựa chọn A-D). Nhiều đáp án chấp nhận được ngăn cách bằng dấu "|".</p>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-400 mt-1 font-medium normal-case">Câu tự luận (không có lựa chọn A-D). Nhiều đáp án chấp nhận được ngăn cách bằng dấu "|".</p>
                                   </>
                                 ) : (
                                   <select
                                     value={q.correctAnswer || 'A'}
                                     onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'correctAnswer', e.target.value)}
-                                    className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                                    className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                                   >
                                     <option value="A">A</option>
                                     <option value="B">B</option>
@@ -966,11 +966,11 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                               </div>
 
                               <div>
-                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Cấp độ khó (CEFR Difficulty):</label>
+                                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Cấp độ khó (CEFR Difficulty):</label>
                                 <select
                                   value={q.difficulty || 'B1'}
                                   onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'difficulty', e.target.value)}
-                                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                                 >
                                   {DIFFICULTY_LEVELS.map(dl => (
                                     <option key={dl} value={dl}>{dl}</option>
@@ -979,11 +979,11 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                               </div>
 
                               <div className="md:col-span-2">
-                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Phân khúc Ngữ pháp (grammarCategory):</label>
+                                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Phân khúc Ngữ pháp (grammarCategory):</label>
                                 <select
                                   value={q.grammarCategory || ''}
                                   onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'grammarCategory', e.target.value)}
-                                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                                 >
                                   <option value="">-- Chọn chủ đề ngữ pháp --</option>
                                   {GRAMMAR_THEMES.map(gt => (
@@ -993,11 +993,11 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                               </div>
 
                               <div className="md:col-span-2">
-                                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Diễn dịch giải chi tiết / Dịch nghĩa học máy (explanation):</label>
+                                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Diễn dịch giải chi tiết / Dịch nghĩa học máy (explanation):</label>
                                 <textarea
                                   value={q.explanation || ''}
                                   onChange={(e) => updateQuestionFieldInDetail(activePassageIdx, qIdx, 'explanation', e.target.value)}
-                                  className="w-full border p-2.5 rounded-xl font-normal text-xs bg-slate-50 focus:ring-1 focus:ring-indigo-500"
+                                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-normal text-xs bg-slate-50 dark:bg-slate-800 focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                                   rows={2.5}
                                   placeholder="Điền lý luận chọn đáp án đúng..."
                                 />
@@ -1011,7 +1011,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                 </div>
               ) : (
-                <div className="py-20 text-center text-slate-400 bg-white rounded-3xl border border-dashed p-6 font-bold text-xs">
+                <div className="py-20 text-center text-slate-400 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-dashed dark:border-slate-700 p-6 font-bold text-xs">
                   Không tìm thấy nhóm học liệu đã chọn. Vui lòng nhấp vào các đoạn văn ở tab bên trái.
                 </div>
               )}
@@ -1028,13 +1028,13 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
   if (editingExam && editMode === 'general') {
     return (
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-        <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden flex flex-col my-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full overflow-hidden flex flex-col my-8">
           <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
             <div>
               <span className="text-[10px] font-black tracking-wider uppercase bg-indigo-500 text-white px-2 py-0.5 rounded">BIÊN TẬP THUỘC TÍNH CỐT LÕI</span>
               <h2 className="font-extrabold text-sm md:text-base mt-1 truncate max-w-md">Đề thi: {editingExam.title}</h2>
             </div>
-            <button 
+            <button
               onClick={() => setEditingExam(null)}
               className="text-slate-400 hover:text-white text-2xl transition-all cursor-pointer"
             >
@@ -1042,48 +1042,48 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
             </button>
           </div>
 
-          <form onSubmit={handleSaveGeneralEditSubmit} className="p-6 overflow-y-auto space-y-4 text-xs font-bold text-slate-700 flex-1">
+          <form onSubmit={handleSaveGeneralEditSubmit} className="p-6 overflow-y-auto space-y-4 text-xs font-bold text-slate-700 dark:text-slate-300 flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Tiêu đề đề thi (title):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Tiêu đề đề thi (title):</label>
                 <input
                   type="text"
                   required
                   value={editingExam.title || ''}
                   onChange={(e) => updateGeneralFieldInDetail('title', e.target.value)}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                   placeholder="Tiêu đề hiển thị..."
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Tên kỳ thi (examName):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Tên kỳ thi (examName):</label>
                 <input
                   type="text"
                   value={editingExam.examName || ''}
                   onChange={(e) => updateGeneralFieldInDetail('examName', e.target.value)}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                   placeholder="Kỳ thi tuyển sinh môn Tiếng Anh Hà Nội..."
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Mã đề thi (examCode):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Mã đề thi (examCode):</label>
                 <input
                   type="text"
                   required
                   value={editingExam.examCode || ''}
                   onChange={(e) => updateGeneralFieldInDetail('examCode', e.target.value)}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Cấp lớp học (grade):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Cấp lớp học (grade):</label>
                 <select
                   value={editingExam.grade || 10}
                   onChange={(e) => updateGeneralFieldInDetail('grade', Number(e.target.value))}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                 >
                   <option value={6}>Lớp 6</option>
                   <option value={10}>Lớp 10</option>
@@ -1092,44 +1092,44 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Năm phát hành (year):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Năm phát hành (year):</label>
                 <input
                   type="number"
                   required
                   value={editingExam.year || new Date().getFullYear()}
                   onChange={(e) => updateGeneralFieldInDetail('year', Number(e.target.value))}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Thời lượng (phút):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Thời lượng (phút):</label>
                 <input
                   type="number"
                   required
                   value={editingExam.duration || 60}
                   onChange={(e) => updateGeneralFieldInDetail('duration', Number(e.target.value))}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-400 uppercase tracking-wider text-[9px] mb-1">Đơn vị ban hành (publisher):</label>
+                <label className="block text-slate-400 dark:text-slate-400 uppercase tracking-wider text-[9px] mb-1">Đơn vị ban hành (publisher):</label>
                 <input
                   type="text"
                   value={editingExam.publisher || ''}
                   onChange={(e) => updateGeneralFieldInDetail('publisher', e.target.value)}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                   placeholder="Sở GD&ĐT Hà Nội, THPT Chuyên..."
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-indigo-500 uppercase tracking-wider text-[9px] mb-1 font-extrabold">PHÂN LOẠI NHÓM ĐỀ THI (classification):</label>
+                <label className="block text-indigo-500 dark:text-indigo-400 uppercase tracking-wider text-[9px] mb-1 font-extrabold">PHÂN LOẠI NHÓM ĐỀ THI (classification):</label>
                 <select
                   value={editingExam.classification || DEFAULT_EXAM_CLASSIFICATION}
                   onChange={(e) => updateGeneralFieldInDetail('classification', e.target.value)}
-                  className="w-full border p-2.5 rounded-xl font-bold bg-slate-50 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl font-bold bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-white"
                 >
                   {EXAM_CLASSIFICATIONS.map(cls => (
                     <option key={cls} value={cls}>{cls}</option>
@@ -1138,11 +1138,11 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
               </div>
             </div>
 
-            <div className="px-1 py-4 bg-slate-50 border-t flex justify-end gap-3 shrink-0 rounded-b-2xl">
+            <div className="px-1 py-4 bg-slate-50 dark:bg-slate-800 border-t dark:border-slate-800 flex justify-end gap-3 shrink-0 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setEditingExam(null)}
-                className="bg-white border px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="bg-white dark:bg-slate-900 border dark:border-slate-700 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Hủy
               </button>
@@ -1166,61 +1166,61 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
       {/* Redesigned TOP Metrics Stats bar widgets */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         
-        <div className="bg-white border border-slate-200/60 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400">TỔNG ĐỀ THI</span>
-            <h3 className="text-2xl font-black font-display text-slate-900 mt-1 tracking-tight">{totalExams}</h3>
+            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-400">TỔNG ĐỀ THI</span>
+            <h3 className="text-2xl font-black font-display text-slate-900 dark:text-white mt-1 tracking-tight">{totalExams}</h3>
           </div>
-          <div className="mt-3 text-[10px] text-slate-500 font-semibold flex items-center justify-between border-t pt-2 gap-1 flex-wrap">
-            <span>C.Thức: <b className="text-amber-650">{officialExamsCount}</b></span>
-            <span>Thử: <b className="text-indigo-650">{trialExamsCount}</b></span>
-            <span>M.Họa: <b className="text-emerald-650">{prepExamsCount}</b></span>
+          <div className="mt-3 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center justify-between border-t dark:border-slate-800 pt-2 gap-1 flex-wrap">
+            <span>C.Thức: <b className="text-amber-650 dark:text-amber-400">{officialExamsCount}</b></span>
+            <span>Thử: <b className="text-indigo-650 dark:text-indigo-400">{trialExamsCount}</b></span>
+            <span>M.Họa: <b className="text-emerald-650 dark:text-emerald-400">{prepExamsCount}</b></span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400">PHẢN HỒI LỖI</span>
+            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-400">PHẢN HỒI LỖI</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <h3 className="text-2xl font-black font-display text-slate-900 tracking-tight">
+              <h3 className="text-2xl font-black font-display text-slate-900 dark:text-white tracking-tight">
                 {totalPendingReports}
               </h3>
-              <span className="text-[11px] font-bold text-amber-600">chưa duyệt</span>
+              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">chưa duyệt</span>
             </div>
           </div>
-          <div className="mt-3 text-[10px] text-slate-500 font-semibold border-t pt-2 flex items-center gap-1">
+          <div className="mt-3 text-[10px] text-slate-500 dark:text-slate-400 font-semibold border-t dark:border-slate-800 pt-2 flex items-center gap-1">
             <ShieldAlert className="h-3 w-3 text-amber-500 shrink-0" />
             <span>Hãy ưu tiên rà soát học liệu</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400">HỌC LIỆU TRÙNG LẶP</span>
-            <h3 className="text-2xl font-black font-display text-slate-900 mt-1 tracking-tight">
+            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-400">HỌC LIỆU TRÙNG LẶP</span>
+            <h3 className="text-2xl font-black font-display text-slate-900 dark:text-white mt-1 tracking-tight">
               {duplicates.length > 0 ? duplicates.length : 'N/A'}
             </h3>
           </div>
-          <div className="mt-3 text-[10px] text-slate-500 font-semibold border-t pt-2 flex items-center gap-1.5 justify-between">
-            <span>Trùng lặp: <b className="text-rose-600 font-bold">{duplicates.length}</b> cặp</span>
-            <button 
+          <div className="mt-3 text-[10px] text-slate-500 dark:text-slate-400 font-semibold border-t dark:border-slate-800 pt-2 flex items-center gap-1.5 justify-between">
+            <span>Trùng lặp: <b className="text-rose-600 dark:text-rose-400 font-bold">{duplicates.length}</b> cặp</span>
+            <button
               onClick={() => setActiveTab('dedup')}
-              className="text-[10px] text-indigo-600 font-black hover:underline cursor-pointer"
+              className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black hover:underline cursor-pointer"
             >
               Quét lại
             </button>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-2xs flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400">HIỆN TRẠNG CHUNG</span>
+            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-400">HIỆN TRẠNG CHUNG</span>
             <div className="flex items-center gap-1.5 mt-1">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <span className="text-xs font-extrabold text-emerald-600">Cơ sở dữ liệu ổn định</span>
+              <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">Cơ sở dữ liệu ổn định</span>
             </div>
           </div>
-          <div className="mt-3 text-[10px] text-slate-500 font-semibold border-t pt-2 max-w-full truncate">
+          <div className="mt-3 text-[10px] text-slate-500 dark:text-slate-400 font-semibold border-t dark:border-slate-800 pt-2 max-w-full truncate">
             <span>Server: Cloud Run active ingress</span>
           </div>
         </div>
@@ -1228,13 +1228,13 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
       </div>
 
       {/* Primary Tab Headers Workspace menu bar */}
-      <div className="flex border-b border-slate-200 gap-2 pb-px overflow-x-auto">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 pb-px overflow-x-auto">
         <button
           onClick={() => setActiveTab('exams')}
           className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 whitespace-nowrap cursor-pointer inline-flex items-center gap-2 ${
             activeTab === 'exams'
               ? 'border-indigo-600 text-indigo-600 font-black'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <BookOpen className="h-4 w-4" /> Kho lưu trữ đề thi
@@ -1244,7 +1244,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 whitespace-nowrap cursor-pointer inline-flex items-center gap-2 ${
             activeTab === 'dedup'
               ? 'border-indigo-600 text-indigo-600 font-black'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Layers className="h-4 w-4" /> Đối sánh & Phát hiện trùng lặp
@@ -1257,7 +1257,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           className={`pb-3 px-4 text-xs font-extrabold transition-all border-b-2 whitespace-nowrap cursor-pointer inline-flex items-center gap-2 relative ${
             activeTab === 'feedbacks'
               ? 'border-indigo-600 text-indigo-600 font-black'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <ShieldAlert className="h-4 w-4" /> Nhật ký Báo lỗi học sinh
@@ -1274,18 +1274,18 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
         <div className="space-y-6 animate-in fade-in duration-200">
           
           {/* Interactive Search Tool & Filters card panel */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/60 shadow-3xs space-y-4">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-3xs space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              
+
               {/* Search text box input */}
               <div className="md:col-span-6 relative">
-                <Search className="absolute left-3.5 top-3 text-slate-400 h-4 w-4" />
+                <Search className="absolute left-3.5 top-3 text-slate-400 dark:text-slate-500 h-4 w-4" />
                 <input
                   type="text"
                   placeholder="Tìm kiếm đề thi bằng tiêu đề, mã đề, nhà xuất bản, nguồn đề..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full text-xs font-semibold pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 placeholder-slate-400"
+                  className="w-full text-xs font-semibold pl-10 pr-4 py-2.5 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-1 focus:ring-indigo-500 placeholder-slate-400 dark:placeholder:text-slate-500 text-slate-800 dark:text-white"
                 />
               </div>
 
@@ -1294,7 +1294,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                 <select
                   value={classificationFilter}
                   onChange={(e) => setClassificationFilter(e.target.value)}
-                  className="w-full text-xs font-bold py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-700"
+                  className="w-full text-xs font-bold py-2.5 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
                 >
                   <option value="all">Tất cả Phân nhóm đề</option>
                   {EXAM_CLASSIFICATIONS.map(cls => (
@@ -1308,7 +1308,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                 <select
                   value={gradeFilter}
                   onChange={(e) => setGradeFilter(e.target.value)}
-                  className="w-full text-xs font-bold py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-700"
+                  className="w-full text-xs font-bold py-2.5 bg-slate-50/50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
                 >
                   <option value="all">Tất cả các Lớp (6, 10, 12)</option>
                   <option value="6">Chỉ Lớp 6</option>
@@ -1319,24 +1319,24 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
             </div>
 
-            <div className="flex justify-between items-center text-[10px] text-slate-400 font-semibold font-mono border-t pt-3">
+            <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-400 font-semibold font-mono border-t dark:border-slate-800 pt-3">
               <span>Đang kết nối: Cloud Firestore Database</span>
-              <span className="text-indigo-600 font-bold">Tìm được {filteredExams.length} kì thi phù hợp</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-bold">Tìm được {filteredExams.length} kì thi phù hợp</span>
             </div>
           </div>
 
           {/* Exams list container */}
           {loading ? (
-            <div className="py-20 text-center animate-pulse text-slate-400 text-xs font-bold font-mono">
+            <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-400 text-xs font-bold font-mono">
               Đang truy xuất thông tin đề thi tiếng Anh...
             </div>
           ) : filteredExams.length === 0 ? (
-            <div className="bg-white p-12 text-center rounded-3xl border border-dashed text-slate-400 text-xs font-bold space-y-2">
-              <AlertCircle className="h-8 w-8 text-slate-350 mx-auto" />
+            <div className="bg-white dark:bg-slate-900 p-12 text-center rounded-3xl border border-dashed dark:border-slate-700 text-slate-400 dark:text-slate-400 text-xs font-bold space-y-2">
+              <AlertCircle className="h-8 w-8 text-slate-350 dark:text-slate-500 mx-auto" />
               <p>Ủa! Không tìm thấy kết quả đề thi nào phù hợp với các tiêu chí tìm kiếm rà soát của bạn.</p>
-              <button 
+              <button
                 onClick={() => { setSearchQuery(''); setClassificationFilter('all'); setGradeFilter('all'); }}
-                className="text-indigo-650 text-[10px] underline hover:text-indigo-800 block mx-auto cursor-pointer"
+                className="text-indigo-650 dark:text-indigo-400 text-[10px] underline hover:text-indigo-800 dark:hover:text-indigo-300 block mx-auto cursor-pointer"
               >
                 Nhấp để Đặt lại bộ lọc
               </button>
@@ -1345,14 +1345,14 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredExams.map(exam => {
                 // Colors representing grades
-                let gradeStyle = "bg-teal-50 text-teal-700 border border-teal-100";
-                if (exam.grade === 10) gradeStyle = "bg-purple-50 text-purple-700 border border-purple-100";
-                if (exam.grade === 12) gradeStyle = "bg-indigo-50 text-indigo-700 border border-indigo-100";
+                let gradeStyle = "bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40";
+                if (exam.grade === 10) gradeStyle = "bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40";
+                if (exam.grade === 12) gradeStyle = "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40";
 
                 return (
-                  <div 
-                    key={exam.id} 
-                    className="p-5 bg-white border border-slate-200/60 hover:border-indigo-400 rounded-3xl hover:shadow-xs transition-all flex flex-col justify-between space-y-4 group"
+                  <div
+                    key={exam.id}
+                    className="p-5 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 rounded-3xl hover:shadow-xs transition-all flex flex-col justify-between space-y-4 group"
                   >
                     <div className="space-y-2.5">
                       {/* Top tags Row */}
@@ -1360,27 +1360,27 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                         <span className={`text-[9px] font-mono tracking-wider uppercase font-black px-2 py-0.5 rounded ${gradeStyle}`}>
                           LỚP {exam.grade}
                         </span>
-                        <span className="bg-slate-100 text-slate-600 text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase">
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase">
                           MÃ: {exam.examCode}
                         </span>
-                        <span className="bg-slate-100 text-slate-600 text-[9px] font-mono font-bold px-2 py-0.5 rounded">
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-mono font-bold px-2 py-0.5 rounded">
                           Năm: {exam.year}
                         </span>
                         {exam.classification && (
-                          <span className="bg-amber-50 text-amber-800 border border-amber-100 text-[8px] md:text-[9px] font-bold px-2 py-0.5 rounded-md">
+                          <span className="bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40 text-[8px] md:text-[9px] font-bold px-2 py-0.5 rounded-md">
                             {exam.classification}
                           </span>
                         )}
                       </div>
 
                       {/* Header Title */}
-                      <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors leading-relaxed line-clamp-2 h-10">
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-relaxed line-clamp-2 h-10">
                         {exam.examName || exam.title}
                       </h4>
 
                       {/* Publisher unit & counts info */}
-                      <div className="text-[11px] text-slate-400 space-y-1 font-semibold leading-normal pb-3 border-b border-dashed border-slate-100">
-                        <p>Nguồn phát hành: <b className="text-slate-600 font-bold">{exam.publisher || "Chưa định nguồn sản xuất"}</b></p>
+                      <div className="text-[11px] text-slate-400 dark:text-slate-400 space-y-1 font-semibold leading-normal pb-3 border-b border-dashed border-slate-100 dark:border-slate-800">
+                        <p>Nguồn phát hành: <b className="text-slate-600 dark:text-slate-400 font-bold">{exam.publisher || "Chưa định nguồn sản xuất"}</b></p>
                         <p className="flex items-center gap-1.5 font-mono text-[10px]">
                           <span>Khuôn khổ: <b>{exam.numQuestions} câu hỏi</b></span>
                           <span>•</span>
@@ -1395,7 +1395,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
                       <button
                         onClick={() => { setEditingExam(exam); setEditMode('general'); }}
-                        className="bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-bold px-2.5 py-2 rounded-xl transition-all border border-slate-200 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
+                        className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold px-2.5 py-2 rounded-xl transition-all border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
                         title="Thay đổi các thông tin chung cốt lõi như tên, mã, lớp, năm..."
                       >
                         <Edit3 className="h-3 w-3 text-indigo-500" /> Sửa chung
@@ -1403,15 +1403,15 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                       <button
                         onClick={() => { setEditingExam(exam); setEditMode('detail'); setActivePassageIdx(0); }}
-                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-900 font-bold px-2.5 py-2 rounded-xl transition-all border border-indigo-100 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
+                        className="bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-bold px-2.5 py-2 rounded-xl transition-all border border-indigo-100 dark:border-indigo-900/40 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
                         title="Biên tập chi tiết nội dung đoạn văn, câu hỏi, đáp án lựa chọn..."
                       >
-                        <Settings className="h-3 w-3 text-indigo-600" /> Sửa câu hỏi
+                        <Settings className="h-3 w-3 text-indigo-600 dark:text-indigo-400" /> Sửa câu hỏi
                       </button>
 
                       <button
                         onClick={() => handleExportJSON(exam)}
-                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2 py-2 rounded-xl transition-all border border-emerald-100 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
+                        className="bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold px-2 py-2 rounded-xl transition-all border border-emerald-100 dark:border-emerald-900/40 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
                         title="Xuất đề thi ra file JSON"
                       >
                         <Download className="h-3 w-3" /> Xuất file
@@ -1419,7 +1419,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                       <button
                         onClick={() => handleDeleteExam(exam.id)}
-                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-2 py-2 rounded-xl border border-rose-100 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
+                        className="bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold px-2 py-2 rounded-xl border border-rose-100 dark:border-rose-900/40 cursor-pointer flex items-center justify-center gap-1 text-[11px]"
                         title="Xóa vĩnh viễn đề thi"
                       >
                         <Trash2 className="h-3 side w-3" /> Xóa đề
@@ -1428,9 +1428,9 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
                     {/* Fast JSON replace handler underneath */}
                     <div className="pt-2 text-[10px] text-right">
-                      <button 
+                      <button
                         onClick={() => jsonInputRef.current?.click()}
-                        className="text-slate-450 hover:text-indigo-600 cursor-pointer font-semibold inline-flex items-center gap-1 border-t w-full justify-end pt-2 border-slate-100/60"
+                        className="text-slate-450 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer font-semibold inline-flex items-center gap-1 border-t dark:border-slate-800 w-full justify-end pt-2 border-slate-100/60"
                         title="Nạp đè một file JSON khác vào ID đề thi này"
                       >
                         <Upload className="h-2.5 w-2.5" /> Ghi đè bằng tệp JSON mới
@@ -1455,15 +1455,15 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
       {/* TAB 2: ĐỐI SÁNH & RÀ SOÁT TRÙNG LẶP HỌC LIỆU */}
       {activeTab === 'dedup' && (
-        <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/60 shadow-xs space-y-6 animate-in fade-in duration-200">
-          
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
+        <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xs space-y-6 animate-in fade-in duration-200">
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b dark:border-slate-800 pb-4">
             <div className="space-y-1">
-              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-indigo-650" />
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-indigo-650 dark:text-indigo-400" />
                 Công cụ Quét Trùng Lặp học liệu (Similarity Detector)
               </h3>
-              <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
                 Giải thuật phân tách chuỗi từ vựng gộp không dấu (Jaccard Index Coefficient) rà soát giữa hàng trăm câu từ của tất cả kì thi trong kho để chỉ ra các câu có mức độ trùng lặp cao (trên 90%).
               </p>
             </div>
@@ -1481,9 +1481,9 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           {scanning && (
             <div className="py-20 text-center space-y-3 max-w-md mx-auto animate-pulse">
               <Activity className="h-8 w-8 text-indigo-600 mx-auto animate-bounce" />
-              <p className="text-slate-800 font-extrabold text-xs uppercase tracking-widest">{scanProgress}</p>
-              <p className="text-[11px] text-slate-400">Điều này có thể mất tới vài giây trên mảng câu hỏi lớn.</p>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <p className="text-slate-800 dark:text-slate-300 font-extrabold text-xs uppercase tracking-widest">{scanProgress}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-400">Điều này có thể mất tới vài giây trên mảng câu hỏi lớn.</p>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                 <div className="bg-indigo-600 h-full w-2/3 rounded-full animate-infinite-loading"></div>
               </div>
             </div>
@@ -1491,57 +1491,57 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
           {!scanning && duplicates.length > 0 && (
             <div className="space-y-5">
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-xs text-amber-800">
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 flex gap-3 text-xs text-amber-800 dark:text-amber-400">
                 <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
                 <div>
                   <p className="font-extrabold">CẢNH BÁO: Phát hiện {duplicates.length} cặp câu hỏi trùng lặp!</p>
-                  <p className="mt-0.5 leading-relaxed text-slate-600 font-medium">Bạn nên biên tập hiệu chỉnh nội dung để đảm bảo học liệu đa dạng và phong phú cho học sinh thoải mái luyện thi.</p>
+                  <p className="mt-0.5 leading-relaxed text-slate-600 dark:text-slate-400 font-medium">Bạn nên biên tập hiệu chỉnh nội dung để đảm bảo học liệu đa dạng và phong phú cho học sinh thoải mái luyện thi.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-5 max-h-[600px] overflow-y-auto pr-1">
                 {duplicates.map((dup, index) => (
-                  <div key={dup.key || index} className="p-4 border border-slate-200 hover:border-amber-400 bg-slate-50/40 rounded-2xl space-y-3 transition-colors text-xs font-semibold">
-                    <div className="flex justify-between items-center bg-slate-100/70 p-2.5 rounded-xl border">
-                      <span className="text-slate-700">Mã căp: <b className="font-mono">{index + 1}</b></span>
-                      <span className="bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-1 rounded font-black text-[10px]">
+                  <div key={dup.key || index} className="p-4 border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500 bg-slate-50/40 dark:bg-slate-800/40 rounded-2xl space-y-3 transition-colors text-xs font-semibold">
+                    <div className="flex justify-between items-center bg-slate-100/70 dark:bg-slate-800/70 p-2.5 rounded-xl border dark:border-slate-700">
+                      <span className="text-slate-700 dark:text-slate-300">Mã căp: <b className="font-mono">{index + 1}</b></span>
+                      <span className="bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 px-2.5 py-1 rounded font-black text-[10px]">
                         ĐỘ TRÙNG KHỚP TRỰC DIỆN: {dup.score}%
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                       {/* Left Exam target */}
-                      <div className="bg-white p-3 rounded-xl border border-dashed text-slate-600 space-y-1.5 leading-relaxed">
-                        <p className="text-[10px] text-indigo-600 flex items-center justify-between">
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed dark:border-slate-700 text-slate-600 dark:text-slate-400 space-y-1.5 leading-relaxed">
+                        <p className="text-[10px] text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
                           <span>ĐỀ THI A: <b>{dup.exam1Title}</b></span>
-                          <button 
+                          <button
                             onClick={() => {
                               const tg = exams.find(e => e.id === dup.exam1Id);
                               if (tg) { setEditingExam(tg); setEditMode('detail'); }
                             }}
-                            className="underline hover:text-indigo-800 font-bold text-[9px] cursor-pointer"
+                            className="underline hover:text-indigo-800 dark:hover:text-indigo-300 font-bold text-[9px] cursor-pointer"
                           >
                             Tới sửa Đề A
                           </button>
                         </p>
-                        <div className="font-medium p-2 bg-slate-50 border rounded-lg text-slate-700" dangerouslySetInnerHTML={{ __html: dup.text1 }} />
+                        <div className="font-medium p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: dup.text1 }} />
                       </div>
 
                       {/* Right Exam target */}
-                      <div className="bg-white p-3 rounded-xl border border-dashed text-slate-600 space-y-1.5 leading-relaxed">
-                        <p className="text-[10px] text-emerald-600 flex items-center justify-between">
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed dark:border-slate-700 text-slate-600 dark:text-slate-400 space-y-1.5 leading-relaxed">
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
                           <span>ĐỀ THI B: <b>{dup.exam2Title}</b></span>
-                          <button 
+                          <button
                             onClick={() => {
                               const tg = exams.find(e => e.id === dup.exam2Id);
                               if (tg) { setEditingExam(tg); setEditMode('detail'); }
                             }}
-                            className="underline hover:text-emerald-800 font-bold text-[9px] cursor-pointer"
+                            className="underline hover:text-emerald-800 dark:hover:text-emerald-300 font-bold text-[9px] cursor-pointer"
                           >
                             Tới sửa Đề B
                           </button>
                         </p>
-                        <div className="font-medium p-2 bg-slate-50 border rounded-lg text-slate-700" dangerouslySetInnerHTML={{ __html: dup.text2 }} />
+                        <div className="font-medium p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: dup.text2 }} />
                       </div>
                     </div>
                   </div>
@@ -1551,10 +1551,10 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           )}
 
           {!scanning && duplicates.length === 0 && (
-            <div className="py-16 text-center text-slate-400 border border-dashed rounded-3xl p-6 font-bold text-xs space-y-1.5">
+            <div className="py-16 text-center text-slate-400 dark:text-slate-400 border border-dashed dark:border-slate-700 rounded-3xl p-6 font-bold text-xs space-y-1.5">
               <Check className="h-8 w-8 text-emerald-500 mx-auto" />
               <p>Học liệu thơm phức! Chưa phát hiện trùng lặp kết cấu học thuật nào.</p>
-              <p className="text-[10px] font-normal text-slate-400">Hãy bấm nút "Bắt đầu quét" phía trên để đo đạc chỉ số chi tiết.</p>
+              <p className="text-[10px] font-normal text-slate-400 dark:text-slate-400">Hãy bấm nút "Bắt đầu quét" phía trên để đo đạc chỉ số chi tiết.</p>
             </div>
           )}
 
@@ -1563,21 +1563,21 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
 
       {/* TAB 3: NHẬT KÝ BÁO LOI COMPLAINTS HỌC SINH */}
       {activeTab === 'feedbacks' && (
-        <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/60 shadow-xs space-y-6 animate-in fade-in duration-200">
-          
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+        <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xs space-y-6 animate-in fade-in duration-200">
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b dark:border-slate-800 pb-4">
             <div className="space-y-1">
-              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-base flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5 text-rose-500" />
                 Danh sách báo lỗi từ học sinh (Student Error Reports log)
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Bảng thông báo các điểm thắc mắc, phân tích đáp án sai hoặc lỗi chính tả do học sinh gửi lên trực diện khi làm bài luyện tập.
               </p>
             </div>
 
             {/* Error filters */}
-            <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
               {(['all', 'pending', 'resolved'] as const).map(st => (
                 <button
                   key={st}
@@ -1585,8 +1585,8 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                   onClick={() => setFeedbackStatusFilter(st)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     feedbackStatusFilter === st
-                      ? 'bg-white text-indigo-600 shadow-3xs'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-3xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   {st === 'all' ? 'Tất cả' : st === 'pending' ? 'Chưa duyệt' : 'Đã khắc phục'}
@@ -1596,15 +1596,15 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
           </div>
 
           {feedbacks.length === 0 ? (
-            <div className="py-16 text-center text-slate-400 border border-dashed rounded-3xl p-6 font-bold text-xs">
+            <div className="py-16 text-center text-slate-400 dark:text-slate-400 border border-dashed dark:border-slate-700 rounded-3xl p-6 font-bold text-xs">
               Chưa gặt hái được bất kỳ báo lỗi nào từ phía học sinh.
             </div>
           ) : (() => {
             const list = feedbacks.filter(f => feedbackStatusFilter === 'all' || f.status === feedbackStatusFilter);
-            
+
             if (list.length === 0) {
               return (
-                <div className="py-12 text-center text-slate-400 font-bold text-xs">
+                <div className="py-12 text-center text-slate-400 dark:text-slate-400 font-bold text-xs">
                   Không tìm thấy phản hồi trùng trạng thái "{feedbackStatusFilter}".
                 </div>
               );
@@ -1613,20 +1613,20 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
             return (
               <div className="space-y-4 max-h-[550px] overflow-y-auto pr-1">
                 {list.map(fb => (
-                  <div 
-                    key={fb.id} 
+                  <div
+                    key={fb.id}
                     className={`p-5 rounded-2xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs font-semibold hover:shadow-2xs transition-all ${
-                      fb.status === 'resolved' 
-                        ? 'bg-emerald-50/15 border-slate-200' 
-                        : 'bg-amber-50/20 border-slate-200'
+                      fb.status === 'resolved'
+                        ? 'bg-emerald-50/15 dark:bg-emerald-950/20 border-slate-200 dark:border-slate-800'
+                        : 'bg-amber-50/20 dark:bg-amber-950/20 border-slate-200 dark:border-slate-800'
                     }`}
                   >
                     <div className="space-y-2 flex-1 leading-relaxed">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-slate-900 font-extrabold text-sm truncate max-w-sm" title={fb.examTitle}>
+                        <span className="text-slate-900 dark:text-white font-extrabold text-sm truncate max-w-sm" title={fb.examTitle}>
                           Đề: {fb.examTitle}
                         </span>
-                        <span className="bg-amber-100 text-amber-800 text-[10px] font-black font-mono px-2 rounded">
+                        <span className="bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 text-[10px] font-black font-mono px-2 rounded">
                           CÂU {fb.questionNumber}
                         </span>
                         {fb.status === 'resolved' ? (
@@ -1634,21 +1634,21 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                             <Check className="h-2.5 w-2.5" /> Đã sửa
                           </span>
                         ) : (
-                          <span className="bg-slate-200 text-slate-600 font-black text-[9px] px-2 rounded uppercase tracking-wider">
+                          <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black text-[9px] px-2 rounded uppercase tracking-wider">
                             Đang rà soát
                           </span>
                         )}
                       </div>
 
                       {/* Flag Quote text content */}
-                      <div className="bg-white p-3 border rounded-xl leading-normal text-slate-700 font-medium">
-                        <span className="text-[9px] text-slate-400 font-bold block select-none uppercase tracking-wider border-b mb-1.5 pb-0.5">Học sinh mô tả lỗi:</span>
-                        <p className="italic text-slate-800 font-serif">"{fb.reportText}"</p>
+                      <div className="bg-white dark:bg-slate-800 p-3 border dark:border-slate-700 rounded-xl leading-normal text-slate-700 dark:text-slate-300 font-medium">
+                        <span className="text-[9px] text-slate-400 dark:text-slate-400 font-bold block select-none uppercase tracking-wider border-b dark:border-slate-700 mb-1.5 pb-0.5">Học sinh mô tả lỗi:</span>
+                        <p className="italic text-slate-800 dark:text-slate-200 font-serif">"{fb.reportText}"</p>
                       </div>
 
                       {/* Sender metadata info */}
-                      <p className="text-[10px] text-slate-400 flex items-center gap-1.5 font-mono">
-                        <span>Học viên: <b className="text-slate-650">{fb.reportedBy}</b></span>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-400 flex items-center gap-1.5 font-mono">
+                        <span>Học viên: <b className="text-slate-650 dark:text-slate-300">{fb.reportedBy}</b></span>
                         <span>•</span>
                         <span>Thời gian: <b>{new Date(fb.createdAt).toLocaleString()}</b></span>
                       </p>
@@ -1658,7 +1658,7 @@ export default function ExamManagerView({ currentGradeFilter = 'all', onShowModa
                     <div className="flex gap-2 shrink-0 self-end md:self-center">
                       <button
                         onClick={() => handleEditFromFeedback(fb)}
-                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-750 font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer flex items-center gap-1 transition-all border border-indigo-100"
+                        className="bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 text-indigo-750 dark:text-indigo-400 font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer flex items-center gap-1 transition-all border border-indigo-100 dark:border-indigo-900/40"
                         title="Tự động mở trình biên tập đặt con trỏ tại đúng câu hỏi bị báo lỗi này"
                       >
                         <Edit3 className="h-3.5 w-3.5" /> Sửa câu này ngay

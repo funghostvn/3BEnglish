@@ -497,62 +497,83 @@ export default function DashboardView({
         )}
       </div>
 
-      {/* ===== HÀNG 2: Thống kê ngân hàng câu hỏi (4 cột) ===== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-        {/* Tổng đề */}
+      {/* ===== HÀNG 2: Ngân hàng đề (gộp) + Phân bổ CEFR (mở rộng) ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        {/* Tổng đề thi + Câu hỏi tích lũy (gộp làm 1 ô) */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/20">
-          <div className="flex items-center gap-3">
-            <span className="p-2.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl text-indigo-600 dark:text-indigo-400">
-              <BookOpen size={20} />
-            </span>
-            <div>
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Tổng đề thi</p>
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalExamsCount}</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl text-indigo-600 dark:text-indigo-400">
+                <BookOpen size={20} />
+              </span>
+              <div>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Tổng đề thi</p>
+                <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalExamsCount}</p>
+              </div>
+            </div>
+            <div className="w-px h-9 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl text-emerald-600 dark:text-emerald-400">
+                <BarChart size={20} />
+              </span>
+              <div>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Câu hỏi tích lũy</p>
+                <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalQuestionsCount}</p>
+              </div>
             </div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-            <span className="bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">Lớp 6: {examsByGrade[6] || 0}</span>
-            <span className="bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">Lớp 10: {examsByGrade[10] || 0}</span>
-            <span className="bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">Lớp 12: {examsByGrade[12] || 0}</span>
+          <div className="mt-4 pt-3 border-t border-indigo-100/60 dark:border-indigo-900/30">
+            <p className="text-slate-400 dark:text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-2">Số đề theo lớp</p>
+            <div className="flex items-end justify-around gap-3">
+              {[6, 10, 12].map(g => {
+                const val = examsByGrade[g] || 0;
+                const maxVal = Math.max(examsByGrade[6] || 0, examsByGrade[10] || 0, examsByGrade[12] || 0, 1);
+                const heightPct = Math.max(Math.round((val / maxVal) * 100), 4);
+                return (
+                  <div key={g} className="flex flex-col items-center gap-1.5">
+                    <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">{val}</span>
+                    <div className="w-9 h-12 bg-slate-200/50 dark:bg-slate-700/40 rounded-t-lg flex items-end overflow-hidden">
+                      <div
+                        className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg transition-all"
+                        style={{ height: `${heightPct}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Lớp {g}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Tổng câu hỏi */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20">
-          <div className="flex items-center gap-3">
-            <span className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl text-emerald-600 dark:text-emerald-400">
-              <BarChart size={20} />
-            </span>
-            <div>
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Câu hỏi tích lũy</p>
-              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{totalQuestionsCount}</p>
-            </div>
-          </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Ngữ pháp, đọc hiểu & từ vựng</p>
-        </div>
-
-        {/* Phân bổ CEFR - chiếm 2 cột */}
-        <div className="sm:col-span-2 md:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20">
-          <div className="flex items-center gap-3 mb-2">
+        {/* Phân bổ CEFR - mở rộng, chiếm 2/3 chiều rộng */}
+        <div className="sm:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 flex flex-col">
+          <div className="flex items-center gap-3 mb-3">
             <span className="p-2.5 bg-purple-100 dark:bg-purple-900/40 rounded-xl text-purple-600 dark:text-purple-400">
               <Layers size={20} />
             </span>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Phân bổ độ khó CEFR</p>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          {/* Biểu đồ cột dọc: chiều cao cột tự giãn theo chiều cao thực của ô (flex-1) */}
+          <div className="flex-1 grid grid-cols-6 gap-1.5 sm:gap-3 min-h-[140px]">
             {Object.entries(difficultyStats).map(([lvl, val]) => {
               const total = Object.values(difficultyStats).reduce((a, b) => a + b, 0);
               const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+              const maxVal = Math.max(...Object.values(difficultyStats), 1);
+              const heightPct = Math.max(Math.round((val / maxVal) * 100), 3);
               return (
-                <div key={lvl} className="flex items-center gap-2 text-xs">
-                  <span className="font-mono text-sm font-bold text-slate-700 dark:text-slate-300 w-8">{lvl}</span>
-                  <div className="flex-1 bg-slate-200/60 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                <div key={lvl} className="h-full flex flex-col items-center gap-1.5">
+                  <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">{pct}%</span>
+                  <div className="w-full flex-1 flex items-end bg-slate-100/70 dark:bg-slate-800/40 rounded-t-lg overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full"
-                      style={{ width: `${pct}%` }}
+                      className="w-full bg-gradient-to-t from-indigo-600 to-purple-500 rounded-t-lg transition-all"
+                      style={{ height: `${heightPct}%` }}
                     />
                   </div>
-                  <span className="text-slate-500 dark:text-slate-400 text-[10px] w-10 text-right font-mono font-bold">{val}</span>
+                  <div className="text-center leading-tight">
+                    <p className="font-mono text-sm font-bold text-slate-700 dark:text-slate-300">{lvl}</p>
+                    <p className="text-[9px] text-slate-400 dark:text-slate-500">{val}</p>
+                  </div>
                 </div>
               );
             })}
