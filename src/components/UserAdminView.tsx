@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { User, ExtensionLog } from '../types';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { fetchCollection, updateDocById } from '../services/firestore';
-import { Users, Phone, Mail, Calendar, Key, UserCheck, ShieldAlert, History, Edit, CalendarMinus } from 'lucide-react';
+import { Users, Phone, Mail, Calendar, Key, UserCheck, ShieldAlert, History, Edit, CalendarMinus, Gem, CheckCircle2, XCircle } from 'lucide-react';
 
 interface UserAdminViewProps {
   onShowModal: (config: { type: 'success' | 'warning' | 'danger' | 'info' | 'confirm'; title: string; message: string; onConfirm?: () => void; onCancel?: () => void; }) => void;
@@ -151,6 +151,38 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
     }
   };
 
+  // Pending diamond-cashout redemption requests (real money — decided by the
+  // user to require admin approval before diamonds are deducted, unlike the
+  // self-service diamond-for-extension redemption).
+  const pendingCashouts = extensionHistory.filter(log => log.source === 'diamond_cashout' && log.status === 'pending');
+
+  const handleApproveCashout = async (log: ExtensionLog) => {
+    try {
+      await updateDocById('users', log.userId, { diamonds: increment(-(log.diamondsSpent || 0)) });
+      await updateDocById('extensions', log.id, { status: 'approved' });
+      onShowModal({
+        type: 'success',
+        title: 'Đã duyệt yêu cầu 💰',
+        message: `Đã trừ ${log.diamondsSpent} 💎 của '${log.username}'. Hãy thanh toán ${(log.cashAmount || 0).toLocaleString('vi-VN')}đ cho học viên bên ngoài ứng dụng.`
+      });
+      fetchUsersAndHistory();
+    } catch (err) {
+      console.error(err);
+      onShowModal({ type: 'danger', title: 'Duyệt yêu cầu thất bại', message: 'Không thể xử lý yêu cầu. Vui lòng thử lại.' });
+    }
+  };
+
+  const handleRejectCashout = async (log: ExtensionLog) => {
+    try {
+      await updateDocById('extensions', log.id, { status: 'rejected' });
+      onShowModal({ type: 'info', title: 'Đã từ chối yêu cầu', message: `Yêu cầu đổi thưởng của '${log.username}' đã bị từ chối, kim cương không bị trừ.` });
+      fetchUsersAndHistory();
+    } catch (err) {
+      console.error(err);
+      onShowModal({ type: 'danger', title: 'Thao tác thất bại', message: 'Không thể xử lý yêu cầu. Vui lòng thử lại.' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -161,7 +193,44 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
 
   return (
     <div className="space-y-10 pb-12 animate-in fade-in duration-200">
-      
+
+      {/* Pending diamond cashout requests — real money, needs explicit approval */}
+      {pendingCashouts.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl space-y-4">
+          <div className="flex items-center gap-2">
+            <Gem className="h-5 w-5 text-amber-600" />
+            <h3 className="font-extrabold text-amber-900 text-base">Yêu cầu đổi thưởng chờ duyệt ({pendingCashouts.length})</h3>
+          </div>
+          <div className="space-y-3">
+            {pendingCashouts.map(log => (
+              <div key={log.id} className="bg-white p-4 rounded-2xl border border-amber-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="text-xs text-slate-700">
+                  <p className="font-bold text-slate-900">{log.username}</p>
+                  <p className="text-slate-500 mt-0.5">
+                    Đổi <b className="text-cyan-700">{log.diamondsSpent} 💎</b> lấy <b className="text-emerald-700">{(log.cashAmount || 0).toLocaleString('vi-VN')}đ</b>
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Lúc: {new Date(log.extendedAt).toLocaleString()}</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => handleApproveCashout(log)}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Duyệt
+                  </button>
+                  <button
+                    onClick={() => handleRejectCashout(log)}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 font-bold rounded-lg text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <XCircle className="h-3.5 w-3.5" /> Từ chối
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Users list View */}
@@ -186,6 +255,11 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
                     <span className="bg-slate-100 text-slate-600 text-[10px] px-2 rounded">
                       Expired: {new Date(u.expiresAt).toLocaleDateString()}
                     </span>
+                    {u.role === 'student' && (
+                      <span className="bg-cyan-50 text-cyan-700 text-[10px] font-bold px-2 rounded flex items-center gap-0.5">
+                        <Gem className="h-3 w-3" /> {u.diamonds || 0}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-x-4 text-xs text-slate-400 font-medium">
@@ -234,13 +308,29 @@ export default function UserAdminView({ onShowModal }: UserAdminViewProps) {
             <div className="space-y-3 max-h-[360px] overflow-y-auto">
               {extensionHistory.map(log => (
                 <div key={log.id} className="p-4 border bg-indigo-50/15 border-indigo-100/50 rounded-2xl space-y-1.5 text-xs text-slate-700">
-                  <div className="flex justify-between font-bold">
+                  <div className="flex justify-between font-bold items-center">
                     <span className="text-slate-900">{log.username}</span>
-                    <span className="text-indigo-600">Gói Lớp {log.grade}</span>
+                    <div className="flex items-center gap-1.5">
+                      {log.source === 'diamond_cashout' && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                          log.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                          log.status === 'rejected' ? 'bg-rose-100 text-rose-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {log.status === 'approved' ? 'Đã duyệt' : log.status === 'rejected' ? 'Đã từ chối' : 'Chờ duyệt'}
+                        </span>
+                      )}
+                      {log.source === 'diamond_extension' && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-cyan-100 text-cyan-700">Tự đổi 💎</span>
+                      )}
+                      <span className="text-indigo-600">Gói Lớp {log.grade}</span>
+                    </div>
                   </div>
-                  <p className="text-slate-500 font-semibold font-mono text-[10px]">
-                    Hạn mới: {new Date(log.extendedTo).toLocaleDateString()}
-                  </p>
+                  {log.source !== 'diamond_cashout' && (
+                    <p className="text-slate-500 font-semibold font-mono text-[10px]">
+                      Hạn mới: {new Date(log.extendedTo).toLocaleDateString()}
+                    </p>
+                  )}
                   <p className="border-t border-slate-200/50 pt-1 text-slate-600 italic">" {log.note} "</p>
                   <p className="text-[10px] text-slate-400 text-right font-medium">Lúc: {new Date(log.extendedAt).toLocaleString()}</p>
                 </div>

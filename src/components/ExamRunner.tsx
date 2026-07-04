@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BookOpen, Award, CheckCircle, AlertCircle, Bookmark, ArrowRight, ArrowLeft, Send, RefreshCw, AlertTriangle, Clock, Highlighter, Eraser, PenLine } from 'lucide-react';
 import { ExamSession } from '../hooks/useExamSession';
 import { Question } from '../types';
 import { isTextInputQuestion, isAnswerCorrect, formatCorrectAnswerDisplay } from '../utils/questionAnswer';
+import DiamondCelebration from './DiamondCelebration';
 
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -126,6 +127,13 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
     try { localStorage.setItem('exam_reading_font', next); } catch { /* ignore */ }
   };
 
+  // Resets whenever the score modal closes (handleRetake sets scoreSummary to
+  // null first), so the next submission's celebration always starts fresh.
+  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
+  useEffect(() => {
+    if (!scoreSummary) setCelebrationDismissed(false);
+  }, [scoreSummary]);
+
   // Wrap the selected text inside the passage pane with <mark> highlights.
   // Works per intersected text node so selections spanning <b>/<i> fragments
   // in the exam HTML are handled safely; the marks live outside React's
@@ -199,6 +207,13 @@ export default function ExamRunner({ session }: { session: ExamSession }) {
 
       {scoreSummary && (
         <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          {scoreSummary.diamondsAwarded > 0 && !celebrationDismissed && (
+            <DiamondCelebration
+              amount={scoreSummary.diamondsAwarded}
+              reasons={scoreSummary.diamondReasons}
+              onDismiss={() => setCelebrationDismissed(true)}
+            />
+          )}
           <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-indigo-600 p-8 text-center text-white relative">
               <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">

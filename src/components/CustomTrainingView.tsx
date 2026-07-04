@@ -14,6 +14,7 @@ interface CustomTrainingViewProps {
   preSelectedGrammar?: string | null;
   onClearPreSelections: () => void;
   onShowModal: (config: ModalConfig) => void;
+  onUserUpdate?: (patch: Partial<User>) => void;
 }
 
 export default function CustomTrainingView({
@@ -25,8 +26,9 @@ export default function CustomTrainingView({
   preSelectedGrammar,
   onClearPreSelections,
   onShowModal,
+  onUserUpdate,
 }: CustomTrainingViewProps) {
-  const session = useExamSession(currentUser, currentGradeFilter, onShowModal);
+  const session = useExamSession(currentUser, currentGradeFilter, onShowModal, onUserUpdate);
   const { exams, loading, examActive, activeExam, srsItems } = session;
 
   const [customVocab, setCustomVocab] = useState('all');

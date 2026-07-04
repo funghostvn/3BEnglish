@@ -4,9 +4,10 @@ import { Exam, Attempt, User, SRSItem, CategoryPerf, VOCABULARY_THEMES, GRAMMAR_
 import { fetchCollection } from '../services/firestore';
 import { estimateCefrFromPerf, CEFR_PASS_ACCURACY, CEFR_MIN_QUESTIONS_SOLID, CEFR_MIN_QUESTIONS_PROVISIONAL } from '../utils/cefr';
 import ScoreTrendChart from './ScoreTrendChart';
+import DiamondRedeemModal from './DiamondRedeemModal';
 import {
   BarChart, BookOpen, Clock, Award, History, RotateCcw, TrendingUp, Trophy,
-  RefreshCw, Flame, Target, Layers, AlertTriangle, Lock, Sparkles
+  RefreshCw, Flame, Target, Layers, AlertTriangle, Lock, Sparkles, Gem
 } from 'lucide-react';
 
 interface LeaderboardEntry {
@@ -27,6 +28,7 @@ interface DashboardViewProps {
   onShowModal: (config: { type: 'success' | 'warning' | 'danger' | 'info'; title: string; message: string }) => void;
   onSelectWeakArea?: (type: 'vocab' | 'grammar', value: string) => void;
   onGoToSrsReview?: () => void;
+  onUserUpdate?: (patch: Partial<User>) => void;
 }
 
 const CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -56,11 +58,13 @@ export default function DashboardView({
   onShowModal,
   onSelectWeakArea,
   onGoToSrsReview,
+  onUserUpdate,
 }: DashboardViewProps) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [srsItems, setSrsItems] = useState<SRSItem[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [sortBy, setSortBy] = useState<'attemptsCount' | 'totalTime' | 'monthAvg' | 'latestScore'>('totalTime');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -411,6 +415,7 @@ export default function DashboardView({
   }
 
   return (
+    <>
     <div className="space-y-8 pb-12 anim-fade-slide-up">
 
       {/* Alert banners: expiry / guest limits / proactive nudge */}
@@ -520,6 +525,32 @@ export default function DashboardView({
             Ôn ngay →
           </button>
         </div>
+
+        {/* Tile: Diamond reward balance (student-only) */}
+        {currentUser?.role === 'student' && (
+          <div className="md:col-span-2 bg-gradient-to-br from-cyan-600 to-indigo-700 text-white p-6 rounded-3xl shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="p-2.5 bg-white/15 rounded-2xl text-white">
+                  <Gem className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold font-mono text-cyan-100/80 uppercase">Kim cương</span>
+              </div>
+              <p className="text-cyan-100 text-[10px] font-extrabold uppercase tracking-wider">Số dư của bạn</p>
+              <h3 className="text-3xl font-extrabold font-display mt-1 tracking-tight">{currentUser.diamonds || 0} 💎</h3>
+              <p className="text-cyan-100/80 text-[11px] mt-2 leading-relaxed">
+                Đạt 9-10 điểm ở đề mới, hoàn thành SRS không sai, và duy trì streak mỗi ngày để kiếm thêm kim cương.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowRedeemModal(true)}
+              className="mt-4 w-full bg-white hover:bg-cyan-50 text-indigo-700 font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 cursor-pointer"
+            >
+              Đổi thưởng 🎁
+            </button>
+          </div>
+        )}
+
         <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-6 rounded-3xl flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <span className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl text-indigo-600 dark:text-indigo-400">
@@ -1069,5 +1100,15 @@ export default function DashboardView({
 
       </div>
     </div>
+
+    {showRedeemModal && currentUser && (
+      <DiamondRedeemModal
+        currentUser={currentUser}
+        onClose={() => setShowRedeemModal(false)}
+        onUserUpdate={patch => onUserUpdate?.(patch)}
+        onShowModal={onShowModal}
+      />
+    )}
+    </>
   );
 }

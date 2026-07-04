@@ -15,6 +15,7 @@ interface PracticeViewProps {
   preSelectedAnswers?: { [qNum: string]: string } | null;
   onClearPreSelections: () => void;
   onShowModal: (config: ModalConfig) => void;
+  onUserUpdate?: (patch: Partial<User>) => void;
 }
 
 export default function PracticeView({
@@ -24,8 +25,9 @@ export default function PracticeView({
   preSelectedAnswers,
   onClearPreSelections,
   onShowModal,
+  onUserUpdate,
 }: PracticeViewProps) {
-  const session = useExamSession(currentUser, currentGradeFilter, onShowModal);
+  const session = useExamSession(currentUser, currentGradeFilter, onShowModal, onUserUpdate);
   const { exams, loading, examActive, activeExam } = session;
 
   const [selectedClassificationFilter, setSelectedClassificationFilter] = useState<string>('all');

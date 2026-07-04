@@ -9,6 +9,8 @@ export interface User {
   role: 'student' | 'admin' | 'guest';
   expiresAt: string; // ISO date-time
   createdAt: string; // ISO date-time
+  diamonds?: number; // reward currency balance, missing means 0
+  lastStreakDiamondDate?: string; // date-only (YYYY-MM-DD) — dedupes the daily streak bonus
 }
 
 export interface Question {
@@ -90,6 +92,13 @@ export interface ExtensionLog {
   extendedAt: string;
   extendedTo: string;
   note: string;
+  // Diamond redemption log fields (reuses this collection instead of a new
+  // one — the live Firestore only allows already-existing collections).
+  // Absent/'admin' means a manual admin-granted extension, same as before.
+  source?: 'admin' | 'diamond_extension' | 'diamond_cashout';
+  diamondsSpent?: number;
+  cashAmount?: number; // VND, only set for 'diamond_cashout'
+  status?: 'pending' | 'approved' | 'rejected'; // only meaningful for 'diamond_cashout'
 }
 
 export interface QuestionFeedback {

@@ -91,7 +91,7 @@ export default function App() {
   });
 
   // Github configurations
-  const [githubRepoInput, setGithubRepoInput] = useState('funghostvn/app');
+  const [githubRepoInput, setGithubRepoInput] = useState('funghostvn/3BEnglish');
   const [backupSyncing, setBackupSyncing] = useState(false);
 
   // Theme configuration for class-based Dark Mode
@@ -461,6 +461,19 @@ export default function App() {
     });
   };
 
+  // Applies a partial update (e.g. a diamond award) to the in-memory session
+  // and its localStorage cache, mirroring every other setCurrentUser call in
+  // this file — used by useExamSession after it writes diamonds to Firestore
+  // so the header/Dashboard balance reflects it without a reload.
+  const handleUserUpdate = (patch: Partial<User>) => {
+    setCurrentUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...patch };
+      localStorage.setItem('exam_prep_user_session', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('exam_prep_user_session');
@@ -569,12 +582,18 @@ export default function App() {
     });
 
     try {
-      // Pull all Firestore documents
+      // Pull all Firestore documents across every collection the app uses —
+      // srs_items/vocab_practice/vocabulary_library were historically missing
+      // here, which meant a restore silently dropped SRS review progress and
+      // normalized vocabulary data instead of actually backing up "everything".
       const usersSnap = await getDocs(collection(db, 'users'));
       const examsSnap = await getDocs(collection(db, 'exams'));
       const attemptsSnap = await getDocs(collection(db, 'attempts'));
       const extensionsSnap = await getDocs(collection(db, 'extensions'));
       const feedbacksSnap = await getDocs(collection(db, 'feedbacks'));
+      const srsItemsSnap = await getDocs(collection(db, 'srs_items'));
+      const vocabPracticeSnap = await getDocs(collection(db, 'vocab_practice'));
+      const vocabularyLibrarySnap = await getDocs(collection(db, 'vocabulary_library'));
 
       const payload = {
         timestamp: new Date().toISOString(),
@@ -583,6 +602,9 @@ export default function App() {
         attempts: attemptsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
         extensions: extensionsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
         feedbacks: feedbacksSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        srs_items: srsItemsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        vocab_practice: vocabPracticeSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        vocabulary_library: vocabularyLibrarySnap.docs.map(d => ({ id: d.id, ...d.data() })),
       };
 
       const response = await fetch('/api/github/backup', {
@@ -599,10 +621,21 @@ export default function App() {
         throw new Error(resData.error || 'Thất bại khi gửi lên GitHub.');
       }
 
+      const counts = [
+        `${payload.users.length} người dùng`,
+        `${payload.exams.length} đề thi`,
+        `${payload.attempts.length} lượt làm bài`,
+        `${payload.extensions.length} nhật ký gia hạn`,
+        `${payload.feedbacks.length} phản hồi`,
+        `${payload.srs_items.length} thẻ SRS`,
+        `${payload.vocab_practice.length} bản luyện từ vựng`,
+        `${payload.vocabulary_library.length} từ vựng chuẩn hóa`,
+      ].join(', ');
+
       showCustomModal({
         type: 'success',
         title: 'Sao lưu GitHub hoàn tất 🎉',
-        message: `Toàn bộ kho dữ liệu đã được nén và đẩy lên file 'exam_prep_backup.json' trong repo '${githubRepoInput.trim()}' thành công.`
+        message: `Toàn bộ kho dữ liệu đã được nén và đẩy lên file 'exam_prep_backup.json' trong repo '${githubRepoInput.trim()}' thành công. Đã sao lưu: ${counts}.`
       });
     } catch (err: any) {
       console.error(err);
@@ -670,11 +703,35 @@ export default function App() {
             await setDoc(doc(db, 'feedbacks', fb.id), fb);
           }
         }
+        // 6. srs_items override
+        if (data.srs_items && Array.isArray(data.srs_items)) {
+          for (const item of data.srs_items) {
+            await setDoc(doc(db, 'srs_items', item.id), item);
+          }
+        }
+        // 7. vocab_practice override
+        if (data.vocab_practice && Array.isArray(data.vocab_practice)) {
+          for (const vp of data.vocab_practice) {
+            await setDoc(doc(db, 'vocab_practice', vp.id), vp);
+          }
+        }
+        // 8. vocabulary_library override
+        if (data.vocabulary_library && Array.isArray(data.vocabulary_library)) {
+          for (const vl of data.vocabulary_library) {
+            await setDoc(doc(db, 'vocabulary_library', vl.id), vl);
+          }
+        }
+
+        const restoredCounts = [
+          ['users', 'người dùng'], ['exams', 'đề thi'], ['attempts', 'lượt làm bài'],
+          ['extensions', 'nhật ký gia hạn'], ['feedbacks', 'phản hồi'], ['srs_items', 'thẻ SRS'],
+          ['vocab_practice', 'bản luyện từ vựng'], ['vocabulary_library', 'từ vựng chuẩn hóa'],
+        ].map(([key, label]) => `${Array.isArray(data[key]) ? data[key].length : 0} ${label}`).join(', ');
 
         showCustomModal({
           type: 'success',
           title: 'Khôi phục hoàn tất ✨',
-          message: 'Bản nén đã được đọc và đồng bộ hóa thành công trên Firestore Cloud của bạn.'
+          message: `Bản nén đã được đọc và đồng bộ hóa thành công trên Firestore Cloud của bạn. Đã khôi phục: ${restoredCounts}.`
         });
         bootstrapAndCheckSession(); // re-boot parameters
       } catch (err: any) {
@@ -706,6 +763,7 @@ export default function App() {
             currentUser={currentUser}
             onRetakeExam={handleVerifyPracticeEntrance}
             onShowModal={showCustomModal}
+            onUserUpdate={handleUserUpdate}
             onSelectWeakArea={(type, val) => {
               if (type === 'vocab') {
                 setPreSelectedVocab(val);
@@ -731,6 +789,7 @@ export default function App() {
               setPreSelectedAnswers(null);
             }}
             onShowModal={showCustomModal}
+            onUserUpdate={handleUserUpdate}
           />
         );
       case 'custom_training':
@@ -745,6 +804,7 @@ export default function App() {
               setPreSelectedGrammar(null);
             }}
             onShowModal={showCustomModal}
+            onUserUpdate={handleUserUpdate}
           />
         );
       case 'vocabulary':
@@ -1186,6 +1246,15 @@ export default function App() {
 
           {/* Active user indicators */}
           <div className="flex items-center gap-2.5">
+            {currentUser.role === 'student' && (
+              <span
+                className="flex items-center gap-1 bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-xs font-extrabold px-2.5 py-1 rounded-full"
+                title="Kim cương tích lũy"
+              >
+                💎 {currentUser.diamonds || 0}
+              </span>
+            )}
+
             <div className="text-right hidden sm:block">
               <p className="text-slate-800 dark:text-slate-200 font-bold text-xs leading-none">{currentUser.name}</p>
               <p className="text-slate-400 dark:text-slate-500 text-[10px] mt-0.5 font-medium capitalize">{currentUser.role}</p>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { doc, collection, writeBatch, addDoc, where } from 'firebase/firestore';
+import { doc, collection, writeBatch, addDoc, where, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { fetchCollection } from '../services/firestore';
 import { Exam, Passage, Question, Attempt, QuestionFeedback, SRSItem, User, CategoryPerf } from '../types';
@@ -16,7 +16,14 @@ export type ModalConfig = {
   cancelText?: string;
 };
 
-export type ScoreSummary = { score: number; correctCount: number; totalCount: number; timeSpent: number };
+export type ScoreSummary = {
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  timeSpent: number;
+  diamondsAwarded: number;
+  diamondReasons: string[];
+};
 
 interface MatchingQuestionItem {
   question: Question;
@@ -62,7 +69,8 @@ export function formatTimer(seconds: number): string {
 export function useExamSession(
   currentUser: User | null,
   currentGradeFilter: string,
-  onShowModal: (config: ModalConfig) => void
+  onShowModal: (config: ModalConfig) => void,
+  onUserUpdate?: (patch: Partial<User>) => void
 ) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -612,7 +620,7 @@ export function useExamSession(
     const finalScore = totalCount > 0 ? (correctCount / totalCount) * 10 : 0;
     const timeSpent = totalQuizTime - timeRemaining;
 
-    setScoreSummary({ score: finalScore, correctCount, totalCount, timeSpent });
+    setScoreSummary({ score: finalScore, correctCount, totalCount, timeSpent, diamondsAwarded: 0, diamondReasons: [] });
 
     // Rage-quit-fast submits (under MIN_ATTEMPT_SECONDS_TO_SAVE) never get an
     // Attempt record, so they're excluded from history and Dashboard scoring.
@@ -623,6 +631,42 @@ export function useExamSession(
     const shouldLogAttempt = timeSpent >= MIN_ATTEMPT_SECONDS_TO_SAVE;
     if (!shouldLogAttempt && !isSrsQuiz) {
       return;
+    }
+
+    // Diamond reward economy — students only (guests aren't backed by a real
+    // Firestore user doc, admins don't earn). Computed before the batch is
+    // built below so the "first attempt at this exam" check below never sees
+    // the attempt this very submission is about to create.
+    let diamondsToAward = 0;
+    const diamondReasons: string[] = [];
+    let streakDiamondToday: string | null = null;
+
+    if (currentUser && currentUser.role === 'student') {
+      const today = new Date().toISOString().slice(0, 10);
+
+      if (!isSrsQuiz && activeExam.examCode !== 'RANDOM' && finalScore >= 9) {
+        // Single-field where() only (matches every other query in this file) —
+        // the live Firestore can't have composite indexes declared for it, so
+        // the userId+examId filter is combined client-side instead.
+        const ownAttempts = await fetchCollection<Attempt>('attempts', where('userId', '==', currentUser.id));
+        const priorAttempts = ownAttempts.filter(a => a.examId === activeExam.id);
+        if (priorAttempts.length === 0) {
+          const reward = finalScore >= 10 ? 10 : 5;
+          diamondsToAward += reward;
+          diamondReasons.push(`+${reward} 💎 Hoàn thành đề mới đạt ${finalScore.toFixed(1)} điểm`);
+        }
+      }
+
+      if (isSrsQuiz && totalCount > 0 && correctCount === totalCount) {
+        diamondsToAward += 1;
+        diamondReasons.push('+1 💎 Hoàn thành ôn luyện SRS không sai câu nào');
+      }
+
+      if (currentUser.lastStreakDiamondDate !== today) {
+        diamondsToAward += 1;
+        diamondReasons.push('+1 💎 Duy trì streak luyện tập hôm nay');
+        streakDiamondToday = today;
+      }
     }
 
     try {
@@ -711,8 +755,23 @@ export function useExamSession(
         });
       }
 
+      if (diamondsToAward > 0 && currentUser) {
+        dbBatch.update(doc(db, 'users', currentUser.id), {
+          diamonds: increment(diamondsToAward),
+          ...(streakDiamondToday ? { lastStreakDiamondDate: streakDiamondToday } : {})
+        });
+      }
+
       await dbBatch.commit();
       fetchSrsItems();
+
+      if (diamondsToAward > 0 && currentUser) {
+        onUserUpdate?.({
+          diamonds: (currentUser.diamonds || 0) + diamondsToAward,
+          ...(streakDiamondToday ? { lastStreakDiamondDate: streakDiamondToday } : {})
+        });
+        setScoreSummary({ score: finalScore, correctCount, totalCount, timeSpent, diamondsAwarded: diamondsToAward, diamondReasons });
+      }
     } catch (error) {
       console.error("Failed to commit attempt score logs to Firestore:", error);
       onShowModal({
