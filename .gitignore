@@ -9,3 +9,4 @@ coverage/
 .claude/settings.local.json
 .firebase/
 firebase-applet-config.json
+public/firebase-config.json

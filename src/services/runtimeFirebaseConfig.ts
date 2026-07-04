@@ -51,6 +51,23 @@ export async function resolveFirebaseConfig(): Promise<FirebaseRuntimeConfig | n
     // server unreachable (e.g. static-only preview) — fall through
   }
 
+  // Static fallback for Hosting-only deploys where the Cloud Function isn't
+  // live yet: a build-time-generated file baked into dist/ (see
+  // scripts/generate-static-firebase-config.js), served as a plain static
+  // asset — so a brand-new device doesn't need the manual setup screen just
+  // because the API layer isn't deployed.
+  try {
+    const res = await fetch('/firebase-config.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.apiKey && data.projectId) {
+        return data as FirebaseRuntimeConfig;
+      }
+    }
+  } catch {
+    // not present in this deploy — fall through
+  }
+
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (raw) {
